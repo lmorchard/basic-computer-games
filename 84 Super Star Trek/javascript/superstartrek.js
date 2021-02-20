@@ -428,7 +428,6 @@ async function commandPhaserControl() {
       continue;
     }
     H = Math.floor((H1 / FND(I)) * (RND(1) + 2));
-    print("X ", X, " H1 ", H1, " H ", H);
     if (H <= 0.15 * K[I][3]) {
       print('SENSORS SHOW NO DAMAGE TO ENEMY AT ', K[I][1], ' , ', K[I][2]);
       continue;
