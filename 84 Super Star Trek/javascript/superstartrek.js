@@ -21,11 +21,11 @@
  * SOME LINES ARE LONGER THAN 72 CHARACTERS; THIS WAS DONE
  * BY USING "?" INSTEAD OF "PRINT" WHEN ENTERING LINES
  */
-const util = require('util');
-const readline = require('readline');
+const util = require("util");
+const readline = require("readline");
 
 function print(...messages) {
-  console.log(messages.join(''));
+  console.log(messages.join(""));
 }
 
 async function input(prompt) {
@@ -44,37 +44,39 @@ async function input(prompt) {
 
 const RND = () => Math.random();
 const FNR = () => Math.floor(Math.random() * 7.98 + 1.01);
-const FND = (I) => Math.sqrt((K[I][1] - S1) ^ (2 + (K[I][2] - S2)) ^ 2);
+const FND = (I) =>
+  Math.sqrt(Math.pow(K[I][1] - S1, 2) + Math.pow(K[I][2] - S2, 2));
 
 let G2$, Q$, C$, Z1, Z2, Z3, Z4, Z5, R1, R2;
 let T, T0, T9, D0, E, E0, P, P0, S9, S, B9, K9, X$, X0$;
-let Q1, Q2, S1, S2;
+let Q1, Q2, Q4, Q5, S1, S2;
 let C, D, Z, G;
-let K, K3, K7, B3, S3, G5, D4;
+let K, K3, K7, B3, S3, G5, D1, D4, D6;
+let C1;
 let N;
 
-const Z$ = '                         ';
+const Z$ = "                         ";
 
 async function main() {
   // 10
-  G2$ = '';
-  Q$ = '';
-  C$ = '';
+  G2$ = "";
+  Q$ = "";
+  C$ = "";
   Z1 = 0;
   Z2 = 0;
   Z3 = 0;
   R1 = 0;
   R2 = 0;
 
-  print('\n'.repeat(10));
-  print('                                    ,------*------,');
+  print("\n".repeat(10));
+  print("                                    ,------*------,");
   print("                    ,-------------   '---  ------'");
   print("                     '-------- --'      / /");
   print("                         ,---' '-------/ /--,");
   print("                          '----------------'");
-  print('');
-  print('                    THE USS ENTERPRISE --- NCC-1701');
-  print('\n'.repeat(4));
+  print("");
+  print("                    THE USS ENTERPRISE --- NCC-1701");
+  print("\n".repeat(4));
 
   T = Math.floor(Math.random() * 20 + 20) * 100;
   T0 = T;
@@ -88,8 +90,8 @@ async function main() {
   S = 0;
   B9 = 2;
   K9 = 0;
-  X$ = '';
-  X0$ = ' IS ';
+  X$ = "";
+  X0$ = " IS ";
 
   // 480 REM INITIALIZE ENTERPRIZE'S POSITION
   Q1 = FNR();
@@ -137,6 +139,8 @@ async function main() {
     Z[i] = [];
     for (let j = 1; j <= 8; j++) {
       Z[i][j] = 0;
+
+      K3 = 0;
       const R1 = Math.random();
       // 850
       if (R1 > 0.98) {
@@ -149,12 +153,14 @@ async function main() {
         K3 = 1;
         K9 = K9 + 1;
       }
+
       // 980
       B3 = 0;
       if (Math.random() > 0.96) {
         B3 = 1;
         B9 = B9 + 1;
       }
+
       // 1040
       G[i][j] = K3 * 100 + B3 * 10 + FNR(1);
     }
@@ -177,28 +183,33 @@ async function main() {
 
   K7 = K9;
   if (B9 !== 1) {
-    X$ = 'S';
-    X0$ = ' ARE ';
+    X$ = "S";
+    X0$ = " ARE ";
   }
 
-  print('YOUR ORDERS ARE AS FOLLOWS:');
-  print('     DESTROY THE ', K9, ' KLINGON WARSHIPS WHICH HAVE INVADED');
-  print('   THE GALAXY BEFORE THEY CAN ATTACK FEDERATION HEADQUARTERS');
+  print("YOUR ORDERS ARE AS FOLLOWS:");
+  print("     DESTROY THE ", K9, " KLINGON WARSHIPS WHICH HAVE INVADED");
+  print("   THE GALAXY BEFORE THEY CAN ATTACK FEDERATION HEADQUARTERS");
   print(
-    '   ON STARDATE ',
+    "   ON STARDATE ",
     T0 + T9,
-    '  THIS GIVES YOU ',
+    "  THIS GIVES YOU ",
     T9,
-    ' DAYS.  THERE',
+    " DAYS.  THERE",
     X0$
   );
-  print('  ', B9, ' STARBASE', X$, ' IN THE GALAXY FOR RESUPPLYING YOUR SHIP');
+  print("  ", B9, " STARBASE", X$, " IN THE GALAXY FOR RESUPPLYING YOUR SHIP");
   print();
   // REM PRINT"HIT ANY KEY EXCEPT RETURN WHEN READY TO ACCEPT COMMAND"
   I = RND(1);
   //REM IF INP(1)=13 THEN 1300
 
-  //1310 REM HERE ANY TIME NEW QUADRANT ENTERED
+  await newQuadrantEntered();
+}
+
+async function newQuadrantEntered() {
+  // 1310 REM HERE ANY TIME NEW QUADRANT ENTERED
+  // 1320
   Z4 = Q1;
   Z5 = Q2;
   K3 = 0;
@@ -219,10 +230,10 @@ async function main() {
     buildQuadrantName();
     print();
     if (T0 == T) {
-      print('YOUR MISSION BEGINS WITH YOUR STARSHIP LOCATED');
+      print("YOUR MISSION BEGINS WITH YOUR STARSHIP LOCATED");
       print("IN THE GALACTIC QUADRANT, '", G2$, "'.");
     } else {
-      print('NOW ENTERING ', G2$, ' QUADRANT . . .');
+      print("NOW ENTERING ", G2$, " QUADRANT . . .");
     }
     print();
     K3 = Math.floor(G[Q1][Q2] * 0.01);
@@ -230,9 +241,9 @@ async function main() {
     S3 = G[Q1][Q2] - 100 * K3 - 10 * B3;
 
     if (K3 != 0) {
-      print('COMBAT AREA      CONDITION RED');
+      print("COMBAT AREA      CONDITION RED");
       if (S <= 200) {
-        print('   SHIELDS DANGEROUSLY LOW');
+        print("   SHIELDS DANGEROUSLY LOW");
       }
     }
 
@@ -250,7 +261,7 @@ async function main() {
 
   // 1660 REM POSITION ENTERPRISE IN QUADRANT, THEN PLACE "K3" KLINGONS, &
   // 1670 REM "B3" STARBASES, & "S3" STARS ELSEWHERE.
-  A$ = '<*>';
+  A$ = "<*>";
   Z1 = S1;
   Z2 = S2;
   insertInStringForQuadrant();
@@ -259,7 +270,7 @@ async function main() {
     // 1720
     for (let i = 1; i <= K3; i++) {
       findEmptyPlaceInQuadrant();
-      A$ = '+K+';
+      A$ = "+K+";
       Z1 = R1;
       Z2 = R2;
       insertInStringForQuadrant();
@@ -272,7 +283,7 @@ async function main() {
   if (B3 >= 1) {
     // 1820
     findEmptyPlaceInQuadrant();
-    A$ = '>!<';
+    A$ = ">!<";
     Z1 = R1;
     B4 = R1;
     Z2 = R2;
@@ -282,7 +293,7 @@ async function main() {
 
   for (let i = 1; i <= 5; i++) {
     findEmptyPlaceInQuadrant();
-    A$ = ' * ';
+    A$ = " * ";
     Z1 = R1;
     Z2 = R2;
     insertInStringForQuadrant();
@@ -292,80 +303,380 @@ async function main() {
   await shortRangeSensorScanAndStartup();
 
   while (true) {
-    // 1990
-    if (S + E <= 10 || (E < 10 && D[7] != 0)) {
-      print();
-      print("** FATAL ERROR **   YOU'VE JUST STRANDED YOUR SHIP IN SPACE");
-      print('YOU HAVE INSUFFICIENT MANEUVERING ENERGY, AND SHIELD CONTROL');
-      print('IS PRESENTLY INCAPABLE OF CROSS-CIRCUITING TO ENGINE ROOM!!');
-      endOfGame();
-    }
+    await acceptCommand();
+  }
+}
 
-    // 2060
-    A$ = await input('COMMAND');
-    // 2140
-    switch (A$.toUpperCase()) {
-      case 'NAV': {
-      }
-      case 'SRS': {
-        await shortRangeSensorScanAndStartup();
-        break;
-      }
-      case 'LRS': {
-        await commandLongRangeScan();
-        break;
-      }
-      case 'PHA': {
-        await commandPhaserControl();
-        break;
-      }
-      case 'TOR': {
-      }
-      case 'SHE': {
-        await commandShieldControl();
-        break;
-      }
-      case 'DAM': {
-        await commandDamageControl();
-        break;
-      }
-      case 'COM': {
-      }
-      case 'XXX': {
-        return endOfGame({ showStardate: false });
-      }
-      default: {
-        print('ENTER ONE OF THE FOLLOWING:');
-        print('  NAV  (TO SET COURSE)');
-        print('  SRS  (FOR SHORT RANGE SENSOR SCAN)');
-        print('  LRS  (FOR LONG RANGE SENSOR SCAN)');
-        print('  PHA  (TO FIRE PHASERS)');
-        print('  TOR  (TO FIRE PHOTON TORPEDOES)');
-        print('  SHE  (TO RAISE OR LOWER SHIELDS)');
-        print('  DAM  (FOR DAMAGE CONTROL REPORTS)');
-        print('  COM  (TO CALL ON LIBRARY-COMPUTER)');
-        print('  XXX  (TO RESIGN YOUR COMMAND)');
-        print();
-        // GOTO 1990
-      }
+async function acceptCommand() {
+  // 1990
+  if (S + E <= 10 || (E < 10 && D[7] != 0)) {
+    print();
+    print("** FATAL ERROR **   YOU'VE JUST STRANDED YOUR SHIP IN SPACE");
+    print("YOU HAVE INSUFFICIENT MANEUVERING ENERGY, AND SHIELD CONTROL");
+    print("IS PRESENTLY INCAPABLE OF CROSS-CIRCUITING TO ENGINE ROOM!!");
+    endOfGame();
+  }
+
+  // 2060
+  A$ = await input("COMMAND");
+  // 2140
+  switch (A$.toUpperCase()) {
+    case "NAV": {
+      await commandCourseControl();
+      break;
+    }
+    case "SRS": {
+      await shortRangeSensorScanAndStartup();
+      break;
+    }
+    case "LRS": {
+      await commandLongRangeScan();
+      break;
+    }
+    case "PHA": {
+      await commandPhaserControl();
+      break;
+    }
+    case "TOR": {
+    }
+    case "SHE": {
+      await commandShieldControl();
+      break;
+    }
+    case "DAM": {
+      await commandDamageControl();
+      break;
+    }
+    case "COM": {
+    }
+    case "XXX": {
+      return endOfGame({ showStardate: false });
+    }
+    default: {
+      print("ENTER ONE OF THE FOLLOWING:");
+      print("  NAV  (TO SET COURSE)");
+      print("  SRS  (FOR SHORT RANGE SENSOR SCAN)");
+      print("  LRS  (FOR LONG RANGE SENSOR SCAN)");
+      print("  PHA  (TO FIRE PHASERS)");
+      print("  TOR  (TO FIRE PHOTON TORPEDOES)");
+      print("  SHE  (TO RAISE OR LOWER SHIELDS)");
+      print("  DAM  (FOR DAMAGE CONTROL REPORTS)");
+      print("  COM  (TO CALL ON LIBRARY-COMPUTER)");
+      print("  XXX  (TO RESIGN YOUR COMMAND)");
+      print();
+      // GOTO 1990
     }
   }
 }
 
 /************************************************************************/
 
+async function shortRangeSensorScanAndStartup() {
+  // 6420 REM SHORT RANGE SENSOR SCAN & STARTUP SUBROUTINE
+  // 6430
+  D0 = 0;
+  for (let i = S1 - 1; i <= S1 + 1; i++) {
+    for (let j = S1 - 1; j <= S2 + 1; j++) {
+      if (
+        Math.floor(i + 0.5) < 1 ||
+        Math.floor(i + 0.5) > 8 ||
+        Math.floor(j + 0.5) < 1 ||
+        Math.floor(j + 0.5) > 8
+      ) {
+        continue;
+      }
+
+      A$ = ">!<";
+      Z1 = i;
+      Z2 = j;
+      stringComparisonInQuadrantArray();
+
+      if (Z3 == 1) {
+        D0 = 1;
+        break;
+      }
+    }
+  }
+
+  if (D0 == 1) {
+    C$ = "DOCKED";
+    E = E0;
+    P = P0;
+    print("SHIELDS DROPPED FOR DOCKING PURPOSES");
+    S = 0;
+  } else {
+    C$ = "GREEN";
+    if (E < E0 * 0.1) C$ = "YELLOW";
+    if (K3 > 0) C$ = "RED";
+  }
+
+  if (D[2] < 0) {
+    // 6730
+    print();
+    print("*** SHORT RANGE SENSORS ARE OUT ***");
+    print();
+    return;
+  }
+
+  // 6770
+  const O1$ = "---------------------------------";
+  print(O1$);
+  for (let I = 1; I <= 8; I++) {
+    print(
+      " " +
+        Q$.substring((I - 1) * 24, (I - 1) * 24 + 24) +
+        [
+          "",
+          `        STARDATE           ${Math.floor(T * 10) * 0.1}`,
+          `        CONDITION          ${C$}`,
+          `        QUADRANT           ${Q1} , ${Q2}`,
+          `        SECTOR             ${S1} , ${S2}`,
+          `        PHOTON TORPEDOES   ${Math.floor(P)}`,
+          `        TOTAL ENERGY       ${Math.floor(E + S)}`,
+          `        SHIELDS            ${Math.floor(S)}`,
+          `        KLINGONS REMAINING ${Math.floor(K9)}`,
+        ][I]
+    );
+  }
+  print(O1$);
+}
+
+async function commandCourseControl() {
+  // 2290 REM COURSE CONTROL BEGINS HERE
+  C1 = parseInt(await input("COURSE (0-9)"));
+  if (C1 == 9) C1 = 1;
+  if (C1 < 1 || C1 > 9) {
+    print("   LT. SULU REPORTS, 'INCORRECT COURSE DATA, SIR!'");
+    return;
+  }
+
+  X$ = "8";
+  if (D[1] < 0) X$ = "0.2";
+
+  W1 = parseFloat(await input(`WARP FACTOR (0-${X$})`));
+  if (W1 == 0) return;
+  if (D[1] < 0 && W1 > 0.2) {
+    return print("WARP ENGINES ARE DAMAGED.  MAXIUM SPEED = WARP 0.2");
+  }
+  if (W1 < 0 && W1 > 8) {
+    return print(
+      `   CHIEF ENGINEER SCOTT REPORTS 'THE ENGINES WON'T TAKE WARP ${W1}!'`
+    );
+  }
+
+  N = Math.floor(W1 * 8 + 0.5);
+  if (E - N < 0) {
+    print("ENGINEERING REPORTS   'INSUFFICIENT ENERGY AVAILABLE");
+    print("                       FOR MANEUVERING AT WARP ", W1, " !'");
+    if (S > N - E && D[7] > 0) {
+      print("DEFLECTOR CONTROL ROOM ACKNOWLEDGES ", S, " UNITS OF ENERGY");
+      print("                         PRESENTLY DEPLOYED TO SHIELDS.");
+    }
+  }
+
+  // 2580 REM KLINGONS MOVE/FIRE ON MOVING STARSHIP . . .
+  for (let I = 1; I <= 3; I++) {
+    if (K[I][3] > 0) {
+      A$ = "   ";
+      Z1 = K[I][1];
+      Z2 = K[I][2];
+      insertInStringForQuadrant();
+      findEmptyPlaceInQuadrant();
+      K[I][1] = Z1;
+      K[I][2] = Z2;
+      A$ = "+K+";
+      insertInStringForQuadrant();
+    }
+  }
+  klingonsShoot();
+
+  D1 = 0;
+  D6 = W1;
+  if (W1 >= 1) D6 = 1;
+
+  for (let I = 1; I <= 8; I++) {
+    if (D[I] >= 0) continue;
+    D[I] = D[I] + D6;
+    if (D[I] > -0.1 && D[I] < 0) {
+      D[I] = -0.1;
+      continue;
+    }
+    if (D[I] < 0) continue;
+    if (D1 != 1) {
+      D1 = 1;
+      print("DAMAGE CONTROL REPORT:");
+    }
+    R1 = I;
+    deviceNameByIndex(R1);
+    print(`        ${G2$} REPAIR COMPLETED.`);
+  }
+
+  // 20% chance of system being damaged or repaired in warp
+  if (RND(1) < 0.2) {
+    R1 = FNR(1);
+    deviceNameByIndex(R1);
+    if (RND(1) < 0.6) {
+      D[R1] = D[R1] - (RND(1) * 5 + 1);
+      if (D1 != 1) {
+        D1 = 1;
+        print("DAMAGE CONTROL REPORT:");
+      }
+      print(`        ${G2$} DAMAGED`);
+    } else {
+      D[R1] = D[R1] + RND(1) * 3 + 1;
+      if (D1 != 1) {
+        D1 = 1;
+        print("DAMAGE CONTROL REPORT:");
+      }
+      print(`        ${G2$} STATE OF REPAIR IMPROVED`);
+    }
+    print();
+  }
+
+  // 3060 REM BEGIN MOVING STARSHIP
+  A$ = "   ";
+  Z1 = Math.floor(S1);
+  Z2 = Math.floor(S2);
+  insertInStringForQuadrant();
+
+  X1 = C[C1][1] + (C[C1 + 1][1] - C[C1][1]) * (C1 - Math.floor(C1));
+  X = S1;
+  Y = S2;
+
+  X2 = C[C1][2] + (C[C1 + 1][2] - C[C1][2]) * (C1 - Math.floor(C1));
+  Q4 = Q1;
+  Q5 = Q2;
+
+  for (let I = 1; I < N; I++) {
+    S1 = S1 + X1;
+    S2 = S2 + X2;
+
+    if (S1 < 1 || S1 >= 9 || S2 < 1 || S2 >= 9) {
+      // 3490 REM EXCEEDED QUADRANT LIMITS
+      X = 8 * Q1 + X + N * X1;
+      Y = 8 * Q2 + Y + N * X2;
+
+      Q1 = Math.floor(X / 8);
+      Q2 = Math.floor(Y / 8);
+
+      S1 = Math.floor(X - Q1 * 8);
+      S2 = Math.floor(Y - Q2 * 8);
+
+      if (S1 == 0) {
+        Q1 = Q1 - 1;
+        S1 = 8;
+      }
+      if (S2 == 0) {
+        Q2 = Q2 - 1;
+        S2 = 8;
+      }
+
+      X5 = 0;
+      if (Q1 < 1) {
+        X5 = 1;
+        Q1 = 1;
+        S1 = 1;
+      }
+      if (Q1 > 8) {
+        X5 = 1;
+        Q1 = 8;
+        S1 = 8;
+      }
+      if (Q2 < 1) {
+        X5 = 1;
+        Q2 = 1;
+        S2 = 1;
+      }
+      if (Q2 > 8) {
+        X5 = 1;
+        Q2 = 8;
+        S2 = 8;
+      }
+
+      if (X5 != 0) {
+        print("LT. UHURA REPORTS MESSAGE FROM STARFLEET COMMAND:");
+        print("  'PERMISSION TO ATTEMPT CROSSING OF GALACTIC PERIMETER");
+        print("  IS HEREBY *DENIED*.  SHUT DOWN YOUR ENGINES.'");
+        print("CHIEF ENGINEER SCOTT REPORTS  'WARP ENGINES SHUT DOWN");
+        print(`  AT SECTOR ${S1} , ${S2} OF QUADRANT ${Q1} , ${Q2}.'`);
+
+        if (T > T0 + T9) {
+          return endOfGame();
+        }
+      }
+
+      if (8 * Q1 + Q2 == 8 * Q4 + Q5) {
+        break;
+      }
+
+      T = T + 1;
+      maneuverEnergy();
+      return await newQuadrantEntered();
+    }
+
+    // 3240
+    S8 = Math.floor(S1) * 24 + Math.floor(S2) * 3 - 26;
+    if (Q$.substring(S8, S8 + 2) != "  ") {
+      S1 = Math.floor(S1 - X1);
+      S2 = Math.floor(S2 - X2);
+
+      print(
+        `WARP ENGINES SHUT DOWN AT SECTOR ${S1} , ${S2} DUE TO BAD NAVAGATION`
+      );
+      break;
+    }
+  }
+
+  S1 = Math.floor(S1);
+  S2 = Math.floor(S2);
+
+  A$ = "<*>";
+  Z1 = Math.floor(S1);
+  Z2 = Math.floor(S2);
+  insertInStringForQuadrant();
+
+  maneuverEnergy();
+
+  T8 = 1;
+  if (W1 < 1) {
+    T8 = 0.1 * Math.floor(10 * W1);
+  }
+
+  T = T + T8;
+  if (T > T0 + T9) {
+    return endOfGame();
+  }
+
+  // 3470 REM SEE IF DOCKED, THEN GET COMMAND
+  return acceptCommand();
+}
+
+function maneuverEnergy() {
+  // 3900 REM MANEUVER ENERGY S/R **
+  E = E - N - 10;
+  if (E >= 0) {
+    return;
+  }
+  print("SHIELD CONTROL SUPPLIES ENERGY TO COMPLETE THE MANEUVER.");
+  S = S + E;
+  E = 0;
+  if (S <= 0) {
+    S = 0;
+  }
+}
+
 async function commandLongRangeScan() {
   // 3990 REM LONG RANGE SENSOR SCAN CODE
   if (D[3] < 0) {
-    print('LONG RANGE SENSORS ARE INOPERABLE');
+    print("LONG RANGE SENSORS ARE INOPERABLE");
     return;
   }
-  print('LONG RANGE SCAN FOR QUADRANT ', Q1, ' , ', Q2);
+  print("LONG RANGE SCAN FOR QUADRANT ", Q1, " , ", Q2);
   const N = [];
-  const O1$ = '-------------------';
+  const O1$ = "-------------------";
   print(O1$);
   for (let I = Q1 - 1; I <= Q1 + 1; I++) {
-    let out = '';
+    let out = "";
     N[1] = -1;
     N[2] = -2;
     N[3] = -3;
@@ -376,14 +687,14 @@ async function commandLongRangeScan() {
       }
     }
     for (let L = 1; L <= 3; L++) {
-      out = out + ': ';
+      out = out + ": ";
       if (N[L] < 0) {
-        out += '*** ';
+        out += "*** ";
       } else {
-        out += ('' + N[L]).padStart(3, '0') + ' ';
+        out += ("" + N[L]).padStart(3, "0") + " ";
       }
     }
-    out += ':';
+    out += ":";
     print(out);
     print(O1$);
   }
@@ -392,26 +703,29 @@ async function commandLongRangeScan() {
 async function commandPhaserControl() {
   // 4250 REM PHASER CONTROL CODE BEGINS HERE
   if (D[4] < 0) {
-    print('PHASERS INOPERATIVE');
+    print("PHASERS INOPERATIVE");
     return;
   }
+
   if (K3 <= 0) {
     print("SCIENCE OFFICER SPOCK REPORTS  'SENSORS SHOW NO ENEMY SHIPS");
     print("                                IN THIS QUADRANT'");
     return;
   }
+
   if (D[8] < 0) {
-    print('COMPUTER FAILURE HAMPERS ACCURACY');
+    print("COMPUTER FAILURE HAMPERS ACCURACY");
   }
-  print('PHASERS LOCKED ON TARGET;  ENERGY AVAILABLE = ', E, ' UNITS');
+
+  print("PHASERS LOCKED ON TARGET;  ENERGY AVAILABLE = ", E, " UNITS");
   let X;
   while (true) {
-    X = parseInt(await input('NUMBER OF UNITS TO FIRE'));
+    X = parseInt(await input("NUMBER OF UNITS TO FIRE"));
     if (X <= 0) return;
     if (E - X >= 0) {
       break;
     }
-    print('ENERGY AVAILABLE = ', E, ' UNITS');
+    print("ENERGY AVAILABLE = ", E, " UNITS");
   }
 
   E = E - X;
@@ -429,23 +743,23 @@ async function commandPhaserControl() {
     }
     H = Math.floor((H1 / FND(I)) * (RND(1) + 2));
     if (H <= 0.15 * K[I][3]) {
-      print('SENSORS SHOW NO DAMAGE TO ENEMY AT ', K[I][1], ' , ', K[I][2]);
+      print("SENSORS SHOW NO DAMAGE TO ENEMY AT ", K[I][1], " , ", K[I][2]);
       continue;
     }
     K[I][3] = K[I][3] - H;
 
-    print(H, ' UNIT HIT ON KLINGON AT SECTOR ', K[I][1], ' , ', K[I][2]);
+    print(H, " UNIT HIT ON KLINGON AT SECTOR ", K[I][1], " , ", K[I][2]);
     if (K[I][3] <= 0) {
-      print('*** KLINGON DESTROYED ***');
+      print("*** KLINGON DESTROYED ***");
       K3 = K3 - 1;
       K9 = K9 - 1;
 
       Z1 = K[I][1];
       Z2 = K[I][2];
-      A$ = '   ';
+      A$ = "   ";
       insertInStringForQuadrant();
 
-      K[(I, 3)] = 0;
+      K[I][3] = 0;
       G[Q1][Q2] = G[Q1][Q2] - 100;
       Z[Q1][Q2] = G[Q1][Q2];
 
@@ -453,7 +767,7 @@ async function commandPhaserControl() {
         return endOfGame({ won: true });
       }
     } else {
-      print('   (SENSORS SHOW ', K[I][3], ' UNITS REMAINING)');
+      print("   (SENSORS SHOW ", K[I][3], " UNITS REMAINING)");
     }
   }
   klingonsShoot();
@@ -465,7 +779,7 @@ async function klingonsShoot() {
     return;
   }
   if (D0 != 0) {
-    print('STARBASE SHIELDS PROTECT THE ENTERPRISE');
+    print("STARBASE SHIELDS PROTECT THE ENTERPRISE");
     return;
   }
   for (let I = 1; I <= 3; I++) {
@@ -475,15 +789,15 @@ async function klingonsShoot() {
 
     H = Math.floor((K[I][3] / FND(I)) * (2 + RND(1)));
     S = S - H;
-    K[I][3] = K[I][3] / (3 + RND(0));
+    K[I][3] = Math.floor(K[I][3] / (3 + RND(0)));
 
-    print(H, ' UNIT HIT ON ENTERPRISE FROM SECTOR ', K[I][1], ' , ', K[I][2]);
+    print(H, " UNIT HIT ON ENTERPRISE FROM SECTOR ", K[I][1], " , ", K[I][2]);
 
     if (S <= 0) {
       return endOfGame({ destroyed: true });
     }
 
-    print('      <SHIELDS DOWN TO ', S, ' UNITS>');
+    print("      <SHIELDS DOWN TO ", S, " UNITS>");
     if (H < 20) {
       continue;
     }
@@ -493,47 +807,47 @@ async function klingonsShoot() {
 
     R1 = FNR(1);
     D[R1] = D[R1] - H / S - 0.5 * RND(1);
-    deviceNameByIndex();
-    print('DAMAGE CONTROL REPORTS ', G2$, " DAMAGED BY THE HIT");
+    deviceNameByIndex(R1);
+    print(`DAMAGE CONTROL REPORTS ${G2$} DAMAGED BY THE HIT`);
   }
 }
 
 async function commandShieldControl() {
   // 5520 REM SHIELD CONTROL
   if (D[7] < 0) {
-    print('SHIELD CONTROL INOPERABLE');
+    print("SHIELD CONTROL INOPERABLE");
     return;
   }
 
-  print('ENERGY AVAILABLE = ', E + S);
-  const X = parseInt(await input('NUMBER OF UNITS TO SHIELDS'));
+  print("ENERGY AVAILABLE = ", E + S);
+  const X = parseInt(await input("NUMBER OF UNITS TO SHIELDS"));
   if (X < 0 || S == X) {
-    print('<SHIELDS UNCHANGED>');
+    print("<SHIELDS UNCHANGED>");
     return;
   }
   if (X > E + S) {
     print("SHIELD CONTROL REPORTS  'THIS IS NOT THE FEDERATION TREASURY.'");
-    print('<SHIELDS UNCHANGED>');
+    print("<SHIELDS UNCHANGED>");
     return;
   }
 
   E = E + S - X;
   S = X;
 
-  print('DEFLECTOR CONTROL ROOM REPORT:');
+  print("DEFLECTOR CONTROL ROOM REPORT:");
   print("  'SHIELDS NOW AT ", Math.floor(S), " UNITS PER YOUR COMMAND.'");
 }
 
 async function commandDamageControl() {
   // 5680 REM DAMAGE CONTROL
   if (D[6] < 0) {
-    print('DAMAGE CONTROL REPORT NOT AVAILABLE');
+    print("DAMAGE CONTROL REPORT NOT AVAILABLE");
     return;
   }
 
   // 5910
   print();
-  print('DEVICE             STATE OF REPAIR');
+  print("DEVICE             STATE OF REPAIR");
   for (R1 = 1; R1 <= 8; R1++) {
     deviceNameByIndex(R1);
     print(
@@ -559,14 +873,14 @@ async function commandDamageControl() {
     if (D3 >= 1) {
       D3 = 0.9;
     }
-    print('TECHNICIANS STANDING BY TO EFFECT REPAIRS TO YOUR SHIP;');
+    print("TECHNICIANS STANDING BY TO EFFECT REPAIRS TO YOUR SHIP;");
     print(
-      'ESTIMATED TIME TO REPAIR: ',
+      "ESTIMATED TIME TO REPAIR: ",
       0.01 * Math.floor(100 * D3),
-      ' STARDATES'
+      " STARDATES"
     );
-    const A$ = await input('WILL YOU AUTHORIZE THE REPAIR ORDER (Y/N)');
-    if (A$.toUpperCase() != 'Y') {
+    const A$ = await input("WILL YOU AUTHORIZE THE REPAIR ORDER (Y/N)");
+    if (A$.toUpperCase() != "Y") {
       return;
     }
     for (let I = 1; I <= 8; I++) {
@@ -585,122 +899,48 @@ async function endOfGame({
   if (destroyed) {
     print();
     print(
-      'THE ENTERPRISE HAS BEEN DESTROYED.  THEN FEDERATION WILL BE CONQUERED'
+      "THE ENTERPRISE HAS BEEN DESTROYED.  THEN FEDERATION WILL BE CONQUERED"
     );
   }
 
   if (showStardate) {
-    print('IT IS STARDATE ', T);
+    print("IT IS STARDATE ", T);
   }
 
   if (!won) {
-    print('THERE WERE ', K9, ' KLINGON BATTLE CRUISERS LEFT AT');
-    print('THE END OF YOUR MISSION.');
+    print("THERE WERE ", K9, " KLINGON BATTLE CRUISERS LEFT AT");
+    print("THE END OF YOUR MISSION.");
   } else {
     // 6370
-    print('CONGRULATION, CAPTAIN!  THEN LAST KLINGON BATTLE CRUISER');
-    print('MENACING THE FDERATION HAS BEEN DESTROYED.');
+    print("CONGRULATION, CAPTAIN!  THEN LAST KLINGON BATTLE CRUISER");
+    print("MENACING THE FDERATION HAS BEEN DESTROYED.");
     print();
-    print('YOUR EFFICIENCY RATING IS ', (1000 * (K7 / (T - T0))) ^ 2);
+    print("YOUR EFFICIENCY RATING IS ", (1000 * (K7 / (T - T0))) ^ 2);
   }
 
   print();
   print();
 
   if (B9 > 0) {
-    print('THE FEDERATION IS IN NEED OF A NEW STARSHIP COMMANDER');
-    print('FOR A SIMILAR MISSION -- IF THERE IS A VOLUNTEER,');
+    print("THE FEDERATION IS IN NEED OF A NEW STARSHIP COMMANDER");
+    print("FOR A SIMILAR MISSION -- IF THERE IS A VOLUNTEER,");
     A$ = await input("LET HIM STEP FORWARD AND ENTER 'AYE'");
     // HACK: recursive call to main seem dirty, but better than a GOTO
-    if (A$.toUpperCase() == 'AYE') return main();
+    //if (A$.toUpperCase() == 'AYE') return main();
   }
 
   // 6360 END
   process.exit();
 }
 
-async function shortRangeSensorScanAndStartup() {
-  // 6420 REM SHORT RANGE SENSOR SCAN & STARTUP SUBROUTINE
-  // 6430
-  for (let i = S1 - 1; i <= S1 + 1; i++) {
-    for (let j = S1 - 1; j <= S2 + 1; j++) {
-      if (
-        Math.floor(i + 0.5) < 1 ||
-        Math.floor(i + 0.5) > 8 ||
-        Math.floor(j + 0.5) < 1 ||
-        Math.floor(j + 0.5) > 8
-      ) {
-        continue;
-      }
-
-      A$ = '>!<';
-      Z1 = i;
-      Z2 = j;
-      stringComparisonInQuadrantArray();
-
-      if (Z3 == 1) {
-        D0 = 1;
-        break;
-      }
-    }
-  }
-
-  if (D0 == 1) {
-    C$ = 'DOCKED';
-    E = E0;
-    P = P0;
-    print('SHIELDS DROPPED FOR DOCKING PURPOSES');
-    S = 0;
-  } else {
-    // 6650 IFK3>0THENC$="*RED*":GOTO6720
-    if (K3 > 0) {
-      C$ = 'RED';
-    }
-    // 6660 C$="GREEN":IFE<E0*.1THENC$="YELLOW"
-    C$ = 'GREEN';
-    if (E < E0 * 0.1) {
-      C$ = 'YELLOW';
-    }
-  }
-
-  if (D[2] < 0) {
-    // 6730
-    print();
-    print('*** SHORT RANGE SENSORS ARE OUT ***');
-    print();
-    return;
-  }
-
-  // 6770
-  const O1$ = '---------------------------------';
-  print(O1$);
-  for (let I = 1; I <= 8; I++) {
-    print(
-      ' ' +
-        Q$.substring((I - 1) * 24, (I - 1) * 24 + 24) +
-        [
-          '',
-          `        STARDATE           ${Math.floor(T * 10) * 0.1}`,
-          `        CONDITION          ${C$}`,
-          `        QUADRANT           ${Q1} , ${Q2}`,
-          `        SECTOR             ${S1} , ${S2}`,
-          `        PHOTON TORPEDOES   ${Math.floor(P)}`,
-          `        TOTAL ENERGY       ${Math.floor(E + S)}`,
-          `        SHIELDS            ${Math.floor(S)}`,
-          `        KLINGONS REMAINING ${Math.floor(K9)}`,
-        ][I]
-    );
-  }
-  print(O1$);
-}
-
 // 8580 REM FIND EMPTY PLACE IN QUADRANT (FOR THINGS)
 function findEmptyPlaceInQuadrant() {
+  // 8590
   Z3 = 0;
   while (Z3 == 0) {
     R1 = FNR(1);
     R2 = FNR(1);
-    A$ = '   ';
+    A$ = "   ";
     Z1 = R1;
     Z2 = R2;
     stringComparisonInQuadrantArray();
@@ -719,9 +959,10 @@ function stringComparisonInQuadrantArray() {
 
 // 8660 REM INSERT IN STRING ARRAY FOR QUADRANT
 function insertInStringForQuadrant() {
+  // 8670
   const S8 = Math.floor(Z2 - 0.5) * 3 + Math.floor(Z1 - 0.5) * 24;
   if (A$.length != 3) {
-    throw 'ERROR';
+    throw "ERROR";
   }
   Q$ = Q$.slice(0, S8) + A$ + Q$.slice(S8 + 3);
 }
@@ -729,15 +970,15 @@ function insertInStringForQuadrant() {
 // 8780 REM PRINTS DEVICE NAME
 function deviceNameByIndex(R1) {
   G2$ = [
-    '', // FIXME: 1-based index
-    'WARP ENGINES',
-    'SHORT RANGE SENSORS',
-    'LONG RANGE SENSORS',
-    'PHASER CONTROL',
-    'PHOTON TUBES',
-    'DAMAGE CONTROL',
-    'SHIELD CONTROL',
-    'LIBRARY-COMPUTER',
+    "", // FIXME: 1-based index
+    "WARP ENGINES",
+    "SHORT RANGE SENSORS",
+    "LONG RANGE SENSORS",
+    "PHASER CONTROL",
+    "PHOTON TUBES",
+    "DAMAGE CONTROL",
+    "SHIELD CONTROL",
+    "LIBRARY-COMPUTER",
   ][R1];
 }
 
@@ -745,31 +986,31 @@ function deviceNameByIndex(R1) {
 function buildQuadrantName() {
   if (Z5 <= 4) {
     G2$ = [
-      '', // FIXME: 1-based index
-      'ANTARES',
-      'RIGEL',
-      'PROCYON',
-      'VEGA',
-      'CANOPUS',
-      'ALTAIR',
-      'SAGITTARIUS',
-      'POLLUX',
+      "", // FIXME: 1-based index
+      "ANTARES",
+      "RIGEL",
+      "PROCYON",
+      "VEGA",
+      "CANOPUS",
+      "ALTAIR",
+      "SAGITTARIUS",
+      "POLLUX",
     ][Z4];
   } else {
     G2$ = [
-      '', // FIXME: 1-based index
-      'SIRIUS',
-      'DENEB',
-      'CAPELLA',
-      'BETELGEUSE',
-      'ALDEBARAN',
-      'REGULUS',
-      'ARCTURUS',
-      'SPICA',
+      "", // FIXME: 1-based index
+      "SIRIUS",
+      "DENEB",
+      "CAPELLA",
+      "BETELGEUSE",
+      "ALDEBARAN",
+      "REGULUS",
+      "ARCTURUS",
+      "SPICA",
     ][Z4];
   }
   if (G5 != 1) {
-    G2$ = G2$ + ['', ' I', ' II', ' III', ' IV'][Z5 % 4];
+    G2$ = G2$ + ["", " I", " II", " III", " IV"][Z5 % 4];
   }
 }
 
