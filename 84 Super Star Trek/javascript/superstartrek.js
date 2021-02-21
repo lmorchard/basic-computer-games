@@ -88,7 +88,8 @@ async function main() {
   P0 = P;
   S9 = 200;
   S = 0;
-  B9 = 2;
+  // B9 = 2; // Bug from original?
+  B9 = 0;
   K9 = 0;
   X$ = "";
   X0$ = " IS ";
@@ -291,7 +292,7 @@ async function newQuadrantEntered() {
     insertInStringForQuadrant();
   }
 
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= S3; i++) {
     findEmptyPlaceInQuadrant();
     A$ = " * ";
     Z1 = R1;
@@ -350,6 +351,8 @@ async function acceptCommand() {
       break;
     }
     case "COM": {
+      await commandLibraryComputer();
+      break;
     }
     case "XXX": {
       return endOfGame({ showStardate: false });
@@ -541,11 +544,11 @@ async function commandCourseControl() {
   Z2 = Math.floor(S2);
   insertInStringForQuadrant();
 
-  X1 = C[C1][1] + (C[C1 + 1][1] - C[C1][1]) * (C1 - Math.floor(C1));
+  const fC1 = Math.floor(C1);
+  X1 = C[fC1][1] + (C[fC1 + 1][1] - C[fC1][1]) * (C1 - Math.floor(C1));
+  X2 = C[fC1][2] + (C[fC1 + 1][2] - C[fC1][2]) * (C1 - Math.floor(C1));
   X = S1;
   Y = S2;
-
-  X2 = C[C1][2] + (C[C1 + 1][2] - C[C1][2]) * (C1 - Math.floor(C1));
   Q4 = Q1;
   Q5 = Q2;
 
@@ -872,7 +875,7 @@ async function commandPhotonTorpedo() {
     } else {
       print("STARFLEET COMMAND REVIEWING YOUR RECORD TO CONSIDER");
       print("COURT MARTIAL!");
-      D0=0
+      D0 = 0;
     }
   }
 
@@ -953,6 +956,7 @@ async function commandShieldControl() {
 
 async function commandDamageControl() {
   // 5680 REM DAMAGE CONTROL
+  // 5690
   if (D[6] < 0) {
     print("DAMAGE CONTROL REPORT NOT AVAILABLE");
     return;
@@ -1000,6 +1004,153 @@ async function commandDamageControl() {
       D[I] = 0;
     }
     T = T + D3 + 0.1;
+  }
+}
+
+async function commandLibraryComputer() {
+  // 7280 REM LIBRARY COMPUTER CODE
+  // 7290
+  if (D[8] < 0) {
+    print("COMPUTER DISABLED");
+    return;
+  }
+
+  const A = parseInt(await input("COMPUTER ACTIVE AND AWAITING COMMAND"));
+  if (A < 0) return;
+
+  // 7350
+  print();
+  //ONA+1GOTO7540,7900,8070,8500,8150,7400
+  switch (A) {
+    case 0:
+      await computerCumulativeRecord();
+      break;
+    case 1:
+      await computerStatusReport();
+      break;
+    case 2:
+      break;
+    case 3:
+      break;
+    case 4:
+      break;
+    case 5:
+      await computerGalaxyMap();
+      break;
+    default: {
+      print("FUNCTIONS AVAILABLE FROM LIBRARY-COMPUTER:");
+      print("   0 = CUMULATIVE GALACTIC RECORD");
+      print("   1 = STATUS REPORT");
+      print("   2 = PHOTON TORPEDO DATA");
+      print("   3 = STARBASE NAV DATA");
+      print("   4 = DIRECTION/DISTANCE CALCULATOR");
+      print("   5 = GALAXY 'REGION NAME' MAP");
+      print();
+      // :GOTO7320
+    }
+  }
+
+  // 8060 REM TORPEDO, BASE NAV, D/D CALCULATOR
+  // 8070 IFK3<=0THEN4270
+  // 8080 X$="":IFK3>1THENX$="S"
+  // 8090 PRINT"FROM ENTERPRISE TO KLINGON BATTLE CRUSER";X$
+  // 8100 H8=0:FORI=1TO3:IFK(I,3)<=0THEN8480
+  // 8110 W1=K(I,1):X=K(I,2)
+  // 8120 C1=S1:A=S2:GOTO8220
+  // 8150 PRINT"DIRECTION/DISTANCE CALCULATOR:"
+  // 8160 PRINT"YOU ARE AT QUADRANT ";Q1;",";Q2;" SECTOR ";S1;",";S2
+  // 8170 PRINT"PLEASE ENTER":INPUT"  INITIAL COORDINATES (X,Y)";C1,A
+  // 8200 INPUT"  FINAL COORDINATES (X,Y)";W1,X
+  // 8220 X=X-A:A=C1-W1:IFX<0THEN8350
+  // 8250 IFA<0THEN8410
+  // 8260 IFX>0THEN8280
+  // 8270 IFA=0THENC1=5:GOTO8290
+  // 8280 C1=1
+  // 8290 IFABS(A)<=ABS(X)THEN8330
+  // 8310 PRINT"DIRECTION =";C1+(((ABS(A)-ABS(X))+ABS(A))/ABS(A)):GOTO8460
+  // 8330 PRINT"DIRECTION =";C1+(ABS(A)/ABS(X)):GOTO8460
+  // 8350 IFA>0THENC1=3:GOTO8420
+  // 8360 IFX<>0THENC1=5:GOTO8290
+  // 8410 C1=7
+  // 8420 IFABS(A)>=ABS(X)THEN8450
+  // 8430 PRINT"DIRECTION =";C1+(((ABS(X)-ABS(A))+ABS(X))/ABS(X)):GOTO8460
+  // 8450 PRINT"DIRECTION =";C1+(ABS(X)/ABS(A))
+  // 8460 PRINT"DISTANCE =";SQR(X^2+A^2):IFH8=1THEN1990
+  // 8480 NEXTI:GOTO1990
+
+  // 8500 IFB3<>0THENPRINT"FROM ENTERPRISE TO STARBASE:":W1=B4:X=B5:GOTO8120
+  // 8510 PRINT"MR. SPOCK REPORTS,  'SENSORS SHOW NO STARBASES IN THIS";
+  // 8520 PRINT" QUADRANT.'":GOTO1990
+}
+
+async function computerStatusReport() {
+  // 7890 REM STATUS REPORT
+  // 7900
+  print("   STATUS REPORT:");
+  X$ = "";
+  if (K9 > 1) X$ = "S";
+  print(`KLINGON${X$} LEFT: ${K9}`);
+  print(
+    `MISSION MUST BE COMPLETED IN ${
+      0.1 * Math.floor((T0 + T9 - T) * 10)
+    }  STARDATES`
+  );
+  X$ = "S";
+  if (B9 < 2) X$ = "";
+  if (B9 < 1) {
+    print("YOUR STUPIDITY HAS LEFT YOU ON YOUR ON IN");
+    print("  THE GALAXY -- YOU HAVE NO STARBASES LEFT!");
+  } else {
+    print(`THE FEDERATION IS MAINTAINING ${B9} STARBASE${X$} IN THE GALAXY`);
+  }
+  commandDamageControl();
+}
+
+async function computerGalaxyMap() {
+  // 7390 REM SETUP TO CHANGE CUM GAL RECORD TO GALAXY MAP
+  // 7400
+  H8 = 0;
+  G5 = 1;
+  print("                        THE GALAXY");
+  computerCommonMap(0);
+}
+
+async function computerCumulativeRecord() {
+  // 7530 REM CUM GALACTIC RECORD
+  // 7540 REM INPUT"DO YOU WANT A HARDCOPY? IS THE TTY ON (Y/N)";A$
+  // 7542 REM IFA$="Y"THENPOKE1229,2:POKE1237,3:NULL1
+  print();
+  print("        ");
+  print(`COMPUTER RECORD OF GALAXY FOR QUADRANT ${Q1} , ${Q2}`);
+  print();
+  computerCommonMap(1);
+}
+
+async function computerCommonMap(H8) {
+  // 7550
+  print("       1     2     3     4     5     6     7     8");
+  const O1$ = "     ----- ----- ----- ----- ----- ----- ----- -----";
+  print(O1$);
+  for (let I = 1; I <= 8; I++) {
+    out = `  ${I}`;
+    if (H8 == 1) {
+      // 7630
+      for (let J = 1; J <= 8; J++) {
+        out += `   ${Z[I][J] == 0 ? "***" : ("" + Z[I][J]).padStart(3, "0")}`;
+      }
+    } else {
+      Z4 = I;
+      Z5 = 1;
+      buildQuadrantName();
+      J0 = Math.floor(12 - 0.5 * G2$.length);
+      out += `  ${" ".repeat(J0)}${G2$}${" ".repeat(J0)}`;
+      Z5 = 5;
+      buildQuadrantName();
+      J0 = Math.floor(12 - 0.5 * G2$.length);
+      out += `${" ".repeat(J0)}${G2$}`;
+    }
+    print(out);
+    print(O1$);
   }
 }
 
@@ -1096,6 +1247,7 @@ function deviceNameByIndex(R1) {
 }
 
 // 9010 REM QUADRANT NAME IN G2$ FROM Z4,Z5 (=Q1,Q2)
+// 9030
 function buildQuadrantName() {
   if (Z5 <= 4) {
     G2$ = [
