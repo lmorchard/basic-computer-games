@@ -1020,7 +1020,6 @@ async function commandLibraryComputer() {
 
   // 7350
   print();
-  //ONA+1GOTO7540,7900,8070,8500,8150,7400
   switch (A) {
     case 0:
       await computerCumulativeRecord();
@@ -1029,10 +1028,13 @@ async function commandLibraryComputer() {
       await computerStatusReport();
       break;
     case 2:
+      await computerPhotonData();
       break;
     case 3:
+      await computerStarbaseData();
       break;
     case 4:
+      await computerDirectionData();
       break;
     case 5:
       await computerGalaxyMap();
@@ -1049,38 +1051,131 @@ async function commandLibraryComputer() {
       // :GOTO7320
     }
   }
+}
 
-  // 8060 REM TORPEDO, BASE NAV, D/D CALCULATOR
-  // 8070 IFK3<=0THEN4270
-  // 8080 X$="":IFK3>1THENX$="S"
-  // 8090 PRINT"FROM ENTERPRISE TO KLINGON BATTLE CRUSER";X$
-  // 8100 H8=0:FORI=1TO3:IFK(I,3)<=0THEN8480
-  // 8110 W1=K(I,1):X=K(I,2)
-  // 8120 C1=S1:A=S2:GOTO8220
-  // 8150 PRINT"DIRECTION/DISTANCE CALCULATOR:"
-  // 8160 PRINT"YOU ARE AT QUADRANT ";Q1;",";Q2;" SECTOR ";S1;",";S2
-  // 8170 PRINT"PLEASE ENTER":INPUT"  INITIAL COORDINATES (X,Y)";C1,A
-  // 8200 INPUT"  FINAL COORDINATES (X,Y)";W1,X
-  // 8220 X=X-A:A=C1-W1:IFX<0THEN8350
-  // 8250 IFA<0THEN8410
-  // 8260 IFX>0THEN8280
-  // 8270 IFA=0THENC1=5:GOTO8290
-  // 8280 C1=1
-  // 8290 IFABS(A)<=ABS(X)THEN8330
-  // 8310 PRINT"DIRECTION =";C1+(((ABS(A)-ABS(X))+ABS(A))/ABS(A)):GOTO8460
-  // 8330 PRINT"DIRECTION =";C1+(ABS(A)/ABS(X)):GOTO8460
-  // 8350 IFA>0THENC1=3:GOTO8420
-  // 8360 IFX<>0THENC1=5:GOTO8290
-  // 8410 C1=7
-  // 8420 IFABS(A)>=ABS(X)THEN8450
-  // 8430 PRINT"DIRECTION =";C1+(((ABS(X)-ABS(A))+ABS(X))/ABS(X)):GOTO8460
-  // 8450 PRINT"DIRECTION =";C1+(ABS(X)/ABS(A))
-  // 8460 PRINT"DISTANCE =";SQR(X^2+A^2):IFH8=1THEN1990
-  // 8480 NEXTI:GOTO1990
+async function computerPhotonData() {
+  // 8070
+  if (K3 <= 0) {
+    print("SCIENCE OFFICER SPOCK REPORTS  'SENSORS SHOW NO ENEMY SHIPS");
+    print("                                IN THIS QUADRANT'");
+    return;
+  }
+  // 8080
+  X$ = "";
+  if (K3 > 1) X$ = "S";
+  print(`FROM ENTERPRISE TO KLINGON BATTLE CRUSER${X$}`);
 
-  // 8500 IFB3<>0THENPRINT"FROM ENTERPRISE TO STARBASE:":W1=B4:X=B5:GOTO8120
-  // 8510 PRINT"MR. SPOCK REPORTS,  'SENSORS SHOW NO STARBASES IN THIS";
-  // 8520 PRINT" QUADRANT.'":GOTO1990
+  for (let I = 1; I <= 3; I++) {
+    if (K[I][3] <= 0) continue;
+    computerDirectionCommon({
+      H8: 0,
+      W1: K[I][1],
+      X: K[I][2],
+      C1: S1,
+      A: S2,
+    });
+  }
+}
+
+async function computerStarbaseData() {
+  // 8500
+  if (B3 == 0) {
+    print("MR. SPOCK REPORTS,  'SENSORS SHOW NO STARBASES IN THIS QUADRANT.'");
+    return;
+  }
+  print("FROM ENTERPRISE TO STARBASE:");
+  computerDirectionCommon({
+    W1: B4,
+    X: B5,
+    C1: S1,
+    A: S2,
+  });
+}
+
+const parseCoords = async (prompt) =>
+  (await input(prompt)).split(",").map((s) => parseInt(s.trim()));
+
+async function computerDirectionData() {
+  print("DIRECTION/DISTANCE CALCULATOR:");
+  print(`YOU ARE AT QUADRANT ${Q1} , ${Q2} SECTOR ${S1} , ${S2}`);
+  print("PLEASE ENTER");
+  const [C1, A] = await parseCoords("  INITIAL COORDINATES (X,Y)");
+  const [W1, X] = await parseCoords("  FINAL COORDINATES (X,Y)");
+  computerDirectionCommon({ W1, X, C1, A });
+}
+
+async function computerDirectionCommon({ H8 = 0, W1, X, C1, A }) {
+  X = X - A;
+  A = C1 - W1;
+
+  const goto8460 = () => {
+    // 8460
+    print(`DISTANCE = ${Math.sqrt(Math.pow(X, 2) + Math.pow(A, 2))}`);
+  };
+
+  const goto8290 = () => {
+    // 8290
+    if (Math.abs(A) > Math.abs(X)) {
+      // 8310
+      print(
+        `DIRECTION = ${
+          C1 + (Math.abs(A) - Math.abs(X) + Math.abs(A)) / Math.abs(A)
+        }`
+      );
+      return goto8460();
+    } else {
+      // 8330
+      print(`DIRECTION = ${C1 + Math.abs(A) / Math.abs(X)}`);
+      return goto8460();
+    }
+  };
+
+  // 8220:IFX<0THEN8350
+  if (X > 0) {
+    // 8250 IFA<0THEN8410
+    if (A < 0) {
+      C1 = 7;
+    } else {
+      // 8260 IFX>0THEN8280
+      if (X < 0) {
+        // 8270 IFA=0THENC1=5:  goto8290();
+        if (A == 0) {
+          C1 = 5;
+          return goto8290();
+        }
+      }
+      // 8280 C1=1
+      C1 = 1;
+      return goto8290();
+    }
+  } else {
+    // 8350 IFA>0THENC1=3:GOTO8420
+    if (A < 0) {
+      // 8360 IFX<>0THENC1=5:GOTO8290
+      if (X != 0) {
+        C1 = 5;
+        return goto8290();
+      }
+      // 8410 C1=7
+      C1 = 7;
+    } else {
+      C1 = 3;
+    }
+
+    // 8420
+    if (Math.abs(A) < Math.abs(X)) {
+      // 8430
+      print(
+        `DIRECTION = ${
+          C1 + (Math.abs(X) - Math.abs(A) + Math.abs(X)) / Math.abs(X)
+        }`
+      );
+    } else {
+      // 8450
+      print(`DIRECTION = ${C1 + Math.abs(X) / Math.abs(A)}`);
+    }
+    return goto8460();
+  }
 }
 
 async function computerStatusReport() {
