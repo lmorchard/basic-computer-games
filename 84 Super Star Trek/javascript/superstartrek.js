@@ -338,6 +338,8 @@ async function acceptCommand() {
       break;
     }
     case "TOR": {
+      await commandPhotonTorpedo();
+      break;
     }
     case "SHE": {
       await commandShieldControl();
@@ -443,7 +445,7 @@ async function shortRangeSensorScanAndStartup() {
 
 async function commandCourseControl() {
   // 2290 REM COURSE CONTROL BEGINS HERE
-  C1 = parseInt(await input("COURSE (0-9)"));
+  C1 = parseFloat(await input("COURSE (0-9)"));
   if (C1 == 9) C1 = 1;
   if (C1 < 1 || C1 > 9) {
     print("   LT. SULU REPORTS, 'INCORRECT COURSE DATA, SIR!'");
@@ -720,7 +722,7 @@ async function commandPhaserControl() {
   print("PHASERS LOCKED ON TARGET;  ENERGY AVAILABLE = ", E, " UNITS");
   let X;
   while (true) {
-    X = parseInt(await input("NUMBER OF UNITS TO FIRE"));
+    X = parseFloat(await input("NUMBER OF UNITS TO FIRE"));
     if (X <= 0) return;
     if (E - X >= 0) {
       break;
@@ -773,6 +775,117 @@ async function commandPhaserControl() {
   klingonsShoot();
 }
 
+async function commandPhotonTorpedo() {
+  // 4690 REM PHOTON TORPEDO CODE BEGINS HERE
+  // 4700
+  if (P <= 0) {
+    return print("ALL PHOTON TORPEDOES EXPENDED");
+  }
+  if (D[5] < 0) {
+    return print("PHOTON TUBES ARE NOT OPERATIONAL");
+  }
+
+  const C1 = parseFloat(await input("PHOTON TORPEDO COURSE (1-9)"));
+  if (C1 == 9) C1 = 1;
+
+  if (C1 < 1 || C1 > 9) {
+    print("ENSIGN CHEKOV REPORTS,  'INCORRECT COURSE DATA, SIR!'");
+  }
+
+  X1 = C[C1][1] + (C[C1 + 1][1] - C[C1][1]) * (C1 - Math.floor(C1));
+  E = E - 2;
+  P = P - 1;
+  X2 = C[C1][2] + (C[C1 + 1][2] - C[C1][2]) * (C1 - Math.floor(C1));
+  X = S1;
+  Y = S2;
+
+  print("TORPEDO TRACK:");
+
+  while (true) {
+    // 4920
+    X = X + X1;
+    Y = Y + X2;
+    X3 = Math.floor(X + 0.5);
+    Y3 = Math.floor(Y + 0.5);
+
+    if (X3 < 1 || X3 > 8 || Y3 < 1 || Y3 > 8) {
+      // 5490
+      print("TORPEDO MISSED");
+      klingonsShoot();
+      return;
+    }
+
+    print(`               ${X3} , ${Y3}`);
+    A$ = "   ";
+    Z1 = X;
+    Z2 = Y;
+    stringComparisonInQuadrantArray();
+    if (Z3 == 0) {
+      break;
+    }
+  }
+
+  // 5060
+  A$ = "+K+";
+  Z1 = X;
+  Z2 = Y;
+  stringComparisonInQuadrantArray();
+  if (Z3 != 0) {
+    print("*** KLINGON DESTROYED ***");
+    K3 = K3 - 1;
+    K9 = K9 - 1;
+    if (K9 <= 0) {
+      return endOfGame({ won: true });
+    }
+    // 5150
+    for (let I = 1; I <= 3; I++) {
+      if (X3 == K[I][1] && Y3 == K[I][2]) {
+        K[I][3] = 0;
+        break;
+      }
+    }
+  }
+
+  // 5210
+  A$ = " * ";
+  Z1 = X;
+  Z2 = Y;
+  stringComparisonInQuadrantArray();
+  if (Z3 != 0) {
+    print(`STAR AT ${X3} , ${Y3} ABSORBED TORPEDO ENERGY.`);
+    klingonsShoot();
+    return;
+  }
+
+  A$ = ">!<";
+  Z1 = X;
+  Z2 = Y;
+  stringComparisonInQuadrantArray();
+  if (Z3 != 0) {
+    print("*** STARBASE DESTROYED ***");
+    B3 = B3 - 1;
+    B9 = B9 - 1;
+    if (B9 <= 0 || K9 <= T - T0 - T9) {
+      print("THAT DOES IT, CAPTAIN!!  YOU ARE HEREBY RELIEVED OF COMMAND");
+      print("AND SENTENCED TO 99 STARDATES AT HARD LABOR ON CYGNUS 12!!");
+      return endOfGame();
+    } else {
+      print("STARFLEET COMMAND REVIEWING YOUR RECORD TO CONSIDER");
+      print("COURT MARTIAL!");
+      D0=0
+    }
+  }
+
+  // 5430
+  Z1 = X;
+  Z2 = Y;
+  A$ = "   ";
+  insertInStringForQuadrant();
+  G[Q1][Q2] = K3 * 100 + B3 * 10 + S3;
+  Z[Q1][Q2] = G[Q1][Q2];
+  klingonsShoot();
+}
+
 async function klingonsShoot() {
   //  5990 REM KLINGONS SHOOTING
   if (K3 <= 0) {
@@ -820,7 +933,7 @@ async function commandShieldControl() {
   }
 
   print("ENERGY AVAILABLE = ", E + S);
-  const X = parseInt(await input("NUMBER OF UNITS TO SHIELDS"));
+  const X = parseFloat(await input("NUMBER OF UNITS TO SHIELDS"));
   if (X < 0 || S == X) {
     print("<SHIELDS UNCHANGED>");
     return;
