@@ -21,8 +21,6 @@
  * SOME LINES ARE LONGER THAN 72 CHARACTERS; THIS WAS DONE
  * BY USING "?" INSTEAD OF "PRINT" WHEN ENTERING LINES
  */
-const util = require("util");
-const readline = require("readline");
 
 const gameOptions = {
   stardateStart: Math.floor(Math.random() * 20 + 20) * 100,
@@ -41,24 +39,29 @@ const gameOptions = {
   nameChiefEngineer: "SCOTT",
 };
 
-const gameState = {};
+let gameState = {};
 
-function print(...messages) {
-  console.log(messages.join(""));
+export function setGameOptions(options = {}) {
+  Object.assign(gameOptions, options);
 }
 
-async function input(prompt) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false,
-  });
-  return new Promise((resolve, reject) => {
-    rl.question(`${prompt}? `, (response) => {
-      rl.close();
-      resolve(response);
-    });
-  });
+export function getGameState() {
+  return {...gameState};
+}
+
+let print = () => {};
+export function onPrint(fn) {
+  print = fn;
+}
+
+let input = () => {};
+export function onInput(fn) {
+  input = fn;
+}
+
+let exit = () => {};
+export function onExit(fn) {
+  exit = fn;
 }
 
 const RND = () => Math.random();
@@ -71,7 +74,7 @@ const FND = (I) =>
 
 const Z$ = "                         ";
 
-async function main() {
+export async function gameMain() {
   // 10
   gameState.quadrantMap = "";
   gameState.alertCondition = "";
@@ -197,7 +200,7 @@ async function main() {
   );
   print();
   // REM PRINT"HIT ANY KEY EXCEPT RETURN WHEN READY TO ACCEPT COMMAND"
-  I = RND(1);
+  //I = RND(1);
   //REM IF INP(1)=13 THEN 1300
 
   await newQuadrantEntered();
@@ -209,7 +212,6 @@ async function newQuadrantEntered() {
   gameState.sectorEnemiesCount = 0;
   gameState.sectorStarbasesCount = 0;
   gameState.sectorStarsCount = 0;
-  G5 = 0;
   gameState.starbaseRepairDelay = 0.5 * Math.random();
   gameState.galacticMapDiscovered[gameState.quadrantPositionY][
     gameState.quadrantPositionX
@@ -317,7 +319,8 @@ async function newQuadrantEntered() {
   // 1980 GOSUB6430
   await shortRangeSensorScanAndStartup();
 
-  while (true) {
+  const continueCommandLoop = true;
+  while (continueCommandLoop) {
     await acceptCommand();
   }
 }
@@ -336,7 +339,7 @@ async function acceptCommand() {
   }
 
   // 2060
-  A$ = await input("COMMAND");
+  const A$ = await input("COMMAND");
   // 2140
   switch (A$.toUpperCase()) {
     case "NAV": {
@@ -491,7 +494,7 @@ async function commandCourseControl() {
     return;
   }
 
-  W1 = parseFloat(
+  const W1 = parseFloat(
     await input(
       `WARP FACTOR (0-${gameState.systemsDamage[1] < 0 ? "0.2" : "8"})`
     )
@@ -632,7 +635,7 @@ async function commandCourseControl() {
         gameState.sectorPositionX = 8;
       }
 
-      X5 = 0;
+      let X5 = 0;
       if (gameState.quadrantPositionY < 1) {
         X5 = 1;
         gameState.quadrantPositionY = 1;
@@ -688,7 +691,7 @@ async function commandCourseControl() {
     }
 
     // 3240
-    S8 =
+    const S8 =
       Math.floor(gameState.sectorPositionY) * 24 +
       Math.floor(gameState.sectorPositionX) * 3 -
       26;
@@ -714,7 +717,7 @@ async function commandCourseControl() {
 
   maneuverEnergy(sectorsToWarp);
 
-  T8 = 1;
+  let T8 = 1;
   if (W1 < 1) {
     T8 = 0.1 * Math.floor(10 * W1);
   }
@@ -819,7 +822,8 @@ async function commandPhaserControl() {
     " UNITS"
   );
   let X;
-  while (true) {
+  const continueCommandLoop = true;
+  while (continueCommandLoop) {
     X = parseFloat(await input("NUMBER OF UNITS TO FIRE"));
     if (X <= 0) return;
     if (gameState.energyRemaining - X >= 0) {
@@ -835,13 +839,13 @@ async function commandPhaserControl() {
     X = X * Math.random();
   }
 
-  H1 = Math.floor(X / gameState.sectorEnemiesCount);
+  let H1 = Math.floor(X / gameState.sectorEnemiesCount);
 
   for (let I = 1; I <= 3; I++) {
     if (gameState.sectorEnemies[I][3] <= 0) {
       continue;
     }
-    H = Math.floor((H1 / FND(I)) * (RND(1) + 2));
+    let H = Math.floor((H1 / FND(I)) * (RND(1) + 2));
     if (H <= 0.15 * gameState.sectorEnemies[I][3]) {
       print(
         "SENSORS SHOW NO DAMAGE TO ENEMY AT ",
@@ -905,7 +909,7 @@ async function commandPhotonTorpedo() {
     return print("PHOTON TUBES ARE NOT OPERATIONAL");
   }
 
-  const C1 = parseFloat(await input("PHOTON TORPEDO COURSE (1-9)"));
+  let C1 = parseFloat(await input("PHOTON TORPEDO COURSE (1-9)"));
   if (C1 == 9) C1 = 1;
 
   if (C1 < 1 || C1 > 9) {
@@ -915,15 +919,17 @@ async function commandPhotonTorpedo() {
   }
 
   const [X1, X2] = courseToXY(C1);
+  let X3, Y3;
 
   gameState.energyRemaining = gameState.energyRemaining - 2;
   gameState.photonTorpedoesRemaining = gameState.photonTorpedoesRemaining - 1;
-  X = gameState.sectorPositionY;
-  Y = gameState.sectorPositionX;
+  let X = gameState.sectorPositionY;
+  let Y = gameState.sectorPositionX;
 
   print("TORPEDO TRACK:");
 
-  while (true) {
+  const forever = true;
+  while (forever) {
     // 4920
     X = X + X1;
     Y = Y + X2;
@@ -1026,7 +1032,7 @@ async function enemiesShoot() {
       continue;
     }
 
-    H = Math.floor((gameState.sectorEnemies[I][3] / FND(I)) * (2 + RND(1)));
+    const H = Math.floor((gameState.sectorEnemies[I][3] / FND(I)) * (2 + RND(1)));
     gameState.shieldsCurrent = gameState.shieldsCurrent - H;
     gameState.sectorEnemies[I][3] = Math.floor(
       gameState.sectorEnemies[I][3] / (3 + RND(0))
@@ -1253,7 +1259,7 @@ async function computerDirectionData() {
   computerDirectionCommon({ W1, X, C1, A });
 }
 
-async function computerDirectionCommon({ H8 = 0, W1, X, C1, A }) {
+async function computerDirectionCommon({ W1, X, C1, A }) {
   X = X - A;
   A = C1 - W1;
 
@@ -1386,7 +1392,7 @@ async function computerCommonMap(H8, G5) {
   const O1$ = "     ----- ----- ----- ----- ----- ----- ----- -----";
   print(O1$);
   for (let I = 1; I <= 8; I++) {
-    out = `  ${I}`;
+    let out = `  ${I}`;
     if (H8 == 1) {
       // 7630
       for (let J = 1; J <= 8; J++) {
@@ -1399,7 +1405,7 @@ async function computerCommonMap(H8, G5) {
     } else {
       let G2$;
       G2$ = buildQuadrantName(I, 1, G5);
-      J0 = Math.floor(12 - 0.5 * G2$.length);
+      let J0 = Math.floor(12 - 0.5 * G2$.length);
       out += `  ${" ".repeat(J0)}${G2$}${" ".repeat(J0)}`;
       G2$ = buildQuadrantName(I, 5, G5);
       J0 = Math.floor(12 - 0.5 * G2$.length);
@@ -1453,14 +1459,14 @@ async function endOfGame({
 
   if (gameState.starbasesRemaining > 0) {
     print("THE FEDERATION IS IN NEED OF A NEW STARSHIP COMMANDER");
-    print("FOR A SIMILAR MISSION -- IF THERE IS A VOLUNTEER,");
-    A$ = await input("LET HIM STEP FORWARD AND ENTER 'AYE'");
+    //print("FOR A SIMILAR MISSION -- IF THERE IS A VOLUNTEER,");
+    //const A$ = await input("LET HIM STEP FORWARD AND ENTER 'AYE'");
     // HACK: recursive call to main seem dirty, but better than a GOTO
     //if (A$.toUpperCase() == 'AYE') return main();
   }
 
   // 6360 END
-  process.exit();
+  exit();
 }
 
 const COURSE_TO_XY = [
@@ -1569,5 +1575,3 @@ function buildQuadrantName(Z4, Z5, G5) {
   }
   return G2$;
 }
-
-main().then(process.exit).catch(console.log);
