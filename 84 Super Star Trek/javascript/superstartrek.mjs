@@ -431,38 +431,32 @@ async function shortRangeSensorScanAndStartup() {
   // 6420 REM SHORT RANGE SENSOR SCAN & STARTUP SUBROUTINE
   // 6430
   gameState.isDocked = 0;
-  //console.log("PRE STARBASE CHECK");
   for (
     let i = gameState.sectorPositionY - 1;
     i <= gameState.sectorPositionY + 1;
     i++
   ) {
-    //console.log("STARBASE CHECK i = ", i);
     for (
-      let j = gameState.sectorPositionY - 1;
+      let j = gameState.sectorPositionX - 1;
       j <= gameState.sectorPositionX + 1;
       j++
     ) {
-      //console.log("STARBASE CHECK j = ", j);
       if (
         Math.floor(i + 0.5) < 1 ||
         Math.floor(i + 0.5) > 8 ||
         Math.floor(j + 0.5) < 1 ||
         Math.floor(j + 0.5) > 8
       ) {
-        //console.log("CHECK FOR STARBASE DOCK OOB AT ", i, j);
         continue;
       }
 
       const Z3 = stringComparisonInQuadrantArray(">!<", i, j);
-      //console.log("CHECK FOR STARBASE DOCK AT ", i, j, Z3);
       if (Z3 == 1) {
         gameState.isDocked = 1;
         break;
       }
     }
   }
-  //console.log("POST STARBASE CHECK");
 
   if (gameState.isDocked == 1) {
     gameState.alertCondition = "DOCKED";

@@ -1,6 +1,6 @@
 # to do / maybe do
 
-* bug in starbase docking - doesn't seem to always work even though I'm right there?
+* starbase computer course function seems not to work
 
 * save / load / dump game state, if only for debugging help to repro issue
 
@@ -11,3 +11,5 @@
 * ANSI colors!
 
 * offer a few game themes - maybe ST:TNG, BSG, B5?
+
+* cheat codes? for debugging?
