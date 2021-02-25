@@ -1,14 +1,13 @@
 # to do / maybe do
 
-* refactor to use function parameters instead of global vars
+* bug in starbase docking - doesn't seem to always work even though I'm right there?
 
-* rename variables to more sensible things
+* save / load / dump game state, if only for debugging help to repro issue
+
+* switch to a more sensible game loop that can accept flags for next turn or game end
 
 * convert to zero-based array indexes
 
-* extract game tuning constants out into a central data structure
-  * e.g. likelihood of klingons & starbases spawning, damage /
-    repair chances, etc
+* ANSI colors!
 
-* maybe abstract away the input / output so that it can run in node and
-  a browser?
+* offer a few game themes - maybe ST:TNG, BSG, B5?

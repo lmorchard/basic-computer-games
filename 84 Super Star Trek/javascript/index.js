@@ -8,18 +8,17 @@ import {
 } from "./superstartrek.mjs";
 
 var term = new Terminal({
-  fontSize: 12,
+  fontSize: 14,
   cols: 80,
   rows: 50,
 });
 term.open(document.getElementById("terminal"));
 term.focus();
 
-function exit() {
+onExit(function exit() {
   // TODO: reset the game without a reload.
   window.location.reload();
-}
-onExit(exit);
+});
 
 onPrint(function print(...messages) {
   //console.log(messages.join(""));
@@ -36,7 +35,7 @@ onInput(function input(prompt) {
         term.write("\r\n");
         disposeOnData.dispose();
         resolve(str);
-      } else if (/^[a-zA-Z0-9]+$/.test(data)) {
+      } else if (/^[a-zA-Z0-9,\.]+$/.test(data)) {
         str += data;
         term.write(data);
       } else if (data == "\u007F" && str.length > 0) {

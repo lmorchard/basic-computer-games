@@ -46,7 +46,7 @@ export function setGameOptions(options = {}) {
 }
 
 export function getGameState() {
-  return {...gameState};
+  return { ...gameState };
 }
 
 let print = () => {};
@@ -64,6 +64,9 @@ export function onExit(fn) {
   exit = fn;
 }
 
+const randomInt = (max, min = 0) =>
+  Math.floor(min + Math.random() * (max - min));
+
 const RND = () => Math.random();
 const FNR = () => Math.floor(Math.random() * 7.98 + 1.01);
 const FND = (I) =>
@@ -74,11 +77,30 @@ const FND = (I) =>
 
 const Z$ = "                         ";
 
-export async function gameMain() {
-  // 10
-  gameState.quadrantMap = "";
-  gameState.alertCondition = "";
+const SYSTEM_WARP_ENGINES = "WARP ENGINES";
+const SYSTEM_SHORT_RANGE_SENSORS = "SHORT RANGE SENSORS";
+const SYSTEM_LONG_RANGE_SENSORS = "LONG RANGE SENSORS";
+const SYSTEM_PHASER_CONTROL = "PHASER CONTROL";
+const SYSTEM_PHOTON_TUBES = "PHOTON TUBES";
+const SYSTEM_DAMAGE_CONTROL = "DAMAGE CONTROL";
+const SYSTEM_SHIELD_CONTROL = "SHIELD CONTROL";
+const SYSTEM_LIBRARY_COMPUTER = "LIBRARY-COMPUTER";
 
+const shipSystems = [
+  SYSTEM_WARP_ENGINES,
+  SYSTEM_SHORT_RANGE_SENSORS,
+  SYSTEM_LONG_RANGE_SENSORS,
+  SYSTEM_PHASER_CONTROL,
+  SYSTEM_PHOTON_TUBES,
+  SYSTEM_DAMAGE_CONTROL,
+  SYSTEM_SHIELD_CONTROL,
+  SYSTEM_LIBRARY_COMPUTER,
+];
+
+export async function gameMain() {
+  await gameReset();
+
+  // 10
   print("\n".repeat(10));
   print("                                    ,------*------,");
   print("                    ,-------------   '---  ------'");
@@ -89,6 +111,34 @@ export async function gameMain() {
   print("                    THE USS ENTERPRISE --- NCC-1701");
   print("\n".repeat(4));
 
+  print("YOUR ORDERS ARE AS FOLLOWS:");
+  print(
+    `     DESTROY THE ${gameState.enemiesRemaining} ${gameOptions.nameEnemy} WARSHIPS WHICH HAVE INVADED`
+  );
+  print("   THE GALAXY BEFORE THEY CAN ATTACK FEDERATION HEADQUARTERS");
+  print(
+    `   ON STARDATE ${
+      gameOptions.stardateStart + gameOptions.timeLimit
+    } THIS GIVES YOU ${gameOptions.timeLimit} DAYS.  THERE${
+      gameState.starbasesRemaining > 1 ? " ARE " : " IS "
+    }`
+  );
+  print(
+    `  ${gameState.starbasesRemaining} STARBASE${
+      gameState.starbasesRemaining > 1 ? "S" : " ARE"
+    } IN THE GALAXY FOR RESUPPLYING YOUR SHIP`
+  );
+  print();
+  // REM PRINT"HIT ANY KEY EXCEPT RETURN WHEN READY TO ACCEPT COMMAND"
+  //I = RND(1);
+  //REM IF INP(1)=13 THEN 1300
+
+  await newQuadrantEntered();
+}
+
+async function gameReset() {
+  gameState.quadrantMap = "";
+  gameState.alertCondition = "";
   gameState.stardateCurrent = gameOptions.stardateStart;
   gameState.isDocked = 0;
   gameState.energyRemaining = gameOptions.energyMax;
@@ -102,9 +152,9 @@ export async function gameMain() {
   gameState.sectorPositionY = FNR();
   gameState.sectorPositionX = FNR();
 
-  gameState.systemsDamage = [];
-  for (let i = 1; i <= 8; i++) {
-    gameState.systemsDamage[i] = 0;
+  gameState.systemsDamage = {};
+  for (const systemName of shipSystems) {
+    gameState.systemsDamage[systemName] = 0;
   }
 
   gameState.sectorEnemiesCount = 0;
@@ -180,30 +230,6 @@ export async function gameMain() {
   }
 
   gameState.enemiesInitialCount = gameState.enemiesRemaining;
-
-  print("YOUR ORDERS ARE AS FOLLOWS:");
-  print(
-    `     DESTROY THE ${gameState.enemiesRemaining} ${gameOptions.nameEnemy} WARSHIPS WHICH HAVE INVADED`
-  );
-  print("   THE GALAXY BEFORE THEY CAN ATTACK FEDERATION HEADQUARTERS");
-  print(
-    `   ON STARDATE ${
-      gameOptions.stardateStart + gameOptions.timeLimit
-    } THIS GIVES YOU ${gameOptions.timeLimit} DAYS.  THERE${
-      gameState.starbasesRemaining > 1 ? " ARE " : " IS "
-    }`
-  );
-  print(
-    `  ${gameState.starbasesRemaining} STARBASE${
-      gameState.starbasesRemaining > 1 ? "S" : " ARE"
-    } IN THE GALAXY FOR RESUPPLYING YOUR SHIP`
-  );
-  print();
-  // REM PRINT"HIT ANY KEY EXCEPT RETURN WHEN READY TO ACCEPT COMMAND"
-  //I = RND(1);
-  //REM IF INP(1)=13 THEN 1300
-
-  await newQuadrantEntered();
 }
 
 async function newQuadrantEntered() {
@@ -329,7 +355,8 @@ async function acceptCommand() {
   // 1990
   if (
     gameState.shieldsCurrent + gameState.energyRemaining <= 10 ||
-    (gameState.energyRemaining < 10 && gameState.systemsDamage[7] != 0)
+    (gameState.energyRemaining < 10 &&
+      gameState.systemsDamage[SYSTEM_SHIELD_CONTROL] != 0)
   ) {
     print();
     print("** FATAL ERROR **   YOU'VE JUST STRANDED YOUR SHIP IN SPACE");
@@ -404,32 +431,38 @@ async function shortRangeSensorScanAndStartup() {
   // 6420 REM SHORT RANGE SENSOR SCAN & STARTUP SUBROUTINE
   // 6430
   gameState.isDocked = 0;
+  //console.log("PRE STARBASE CHECK");
   for (
     let i = gameState.sectorPositionY - 1;
     i <= gameState.sectorPositionY + 1;
     i++
   ) {
+    //console.log("STARBASE CHECK i = ", i);
     for (
       let j = gameState.sectorPositionY - 1;
       j <= gameState.sectorPositionX + 1;
       j++
     ) {
+      //console.log("STARBASE CHECK j = ", j);
       if (
         Math.floor(i + 0.5) < 1 ||
         Math.floor(i + 0.5) > 8 ||
         Math.floor(j + 0.5) < 1 ||
         Math.floor(j + 0.5) > 8
       ) {
+        //console.log("CHECK FOR STARBASE DOCK OOB AT ", i, j);
         continue;
       }
 
       const Z3 = stringComparisonInQuadrantArray(">!<", i, j);
+      //console.log("CHECK FOR STARBASE DOCK AT ", i, j, Z3);
       if (Z3 == 1) {
         gameState.isDocked = 1;
         break;
       }
     }
   }
+  //console.log("POST STARBASE CHECK");
 
   if (gameState.isDocked == 1) {
     gameState.alertCondition = "DOCKED";
@@ -444,7 +477,7 @@ async function shortRangeSensorScanAndStartup() {
     if (gameState.sectorEnemiesCount > 0) gameState.alertCondition = "RED";
   }
 
-  if (gameState.systemsDamage[2] < 0) {
+  if (gameState.systemsDamage[SYSTEM_SHORT_RANGE_SENSORS] < 0) {
     // 6730
     print();
     print("*** SHORT RANGE SENSORS ARE OUT ***");
@@ -496,11 +529,13 @@ async function commandCourseControl() {
 
   const W1 = parseFloat(
     await input(
-      `WARP FACTOR (0-${gameState.systemsDamage[1] < 0 ? "0.2" : "8"})`
+      `WARP FACTOR (0-${
+        gameState.systemsDamage[SYSTEM_WARP_ENGINES] < 0 ? "0.2" : "8"
+      })`
     )
   );
   if (W1 == 0) return;
-  if (gameState.systemsDamage[1] < 0 && W1 > 0.2) {
+  if (gameState.systemsDamage[SYSTEM_WARP_ENGINES] < 0 && W1 > 0.2) {
     return print("WARP ENGINES ARE DAMAGED.  MAXIUM SPEED = WARP 0.2");
   }
   if (W1 < 0 && W1 > 8) {
@@ -515,7 +550,7 @@ async function commandCourseControl() {
     print("                       FOR MANEUVERING AT WARP ", W1, " !'");
     if (
       gameState.shieldsCurrent > sectorsToWarp - gameState.energyRemaining &&
-      gameState.systemsDamage[7] > 0
+      gameState.systemsDamage[SYSTEM_SHIELD_CONTROL] > 0
     ) {
       print(
         "DEFLECTOR CONTROL ROOM ACKNOWLEDGES ",
@@ -549,42 +584,45 @@ async function commandCourseControl() {
   let D6 = W1;
   if (W1 >= 1) D6 = 1;
 
-  for (let I = 1; I <= 8; I++) {
-    if (gameState.systemsDamage[I] >= 0) continue;
-    gameState.systemsDamage[I] = gameState.systemsDamage[I] + D6;
-    if (gameState.systemsDamage[I] > -0.1 && gameState.systemsDamage[I] < 0) {
-      gameState.systemsDamage[I] = -0.1;
+  for (const systemName of shipSystems) {
+    if (gameState.systemsDamage[systemName] >= 0) continue;
+    gameState.systemsDamage[systemName] =
+      gameState.systemsDamage[systemName] + D6;
+    if (
+      gameState.systemsDamage[systemName] > -0.1 &&
+      gameState.systemsDamage[systemName] < 0
+    ) {
+      gameState.systemsDamage[systemName] = -0.1;
       continue;
     }
-    if (gameState.systemsDamage[I] < 0) continue;
+    if (gameState.systemsDamage[systemName] < 0) continue;
     if (D1 != 1) {
       D1 = 1;
       print("DAMAGE CONTROL REPORT:");
     }
-    let G2$ = deviceNameByIndex(I);
-    print(`        ${G2$} REPAIR COMPLETED.`);
+    print(`        ${systemName} REPAIR COMPLETED.`);
   }
 
   // 20% chance of system being damaged or repaired in warp
-  if (RND(1) < 0.2) {
-    let R1 = FNR(1);
-    let G2$ = deviceNameByIndex(R1);
+  if (RND() < 0.2) {
+    const systemIdx = randomInt(shipSystems.length);
+    const systemName = shipSystems[systemIdx];
     if (RND(1) < 0.6) {
-      gameState.systemsDamage[R1] =
-        gameState.systemsDamage[R1] - (RND(1) * 5 + 1);
+      gameState.systemsDamage[systemName] =
+        gameState.systemsDamage[systemName] - (RND(1) * 5 + 1);
       if (D1 != 1) {
         D1 = 1;
         print("DAMAGE CONTROL REPORT:");
       }
-      print(`        ${G2$} DAMAGED`);
+      print(`        ${systemName} DAMAGED`);
     } else {
-      gameState.systemsDamage[R1] =
-        gameState.systemsDamage[R1] + RND(1) * 3 + 1;
+      gameState.systemsDamage[systemName] =
+        gameState.systemsDamage[systemName] + RND(1) * 3 + 1;
       if (D1 != 1) {
         D1 = 1;
         print("DAMAGE CONTROL REPORT:");
       }
-      print(`        ${G2$} STATE OF REPAIR IMPROVED`);
+      print(`        ${systemName} STATE OF REPAIR IMPROVED`);
     }
     print();
   }
@@ -751,7 +789,7 @@ function maneuverEnergy(sectorsToWarp) {
 
 async function commandLongRangeScan() {
   // 3990 REM LONG RANGE SENSOR SCAN CODE
-  if (gameState.systemsDamage[3] < 0) {
+  if (gameState.systemsDamage[SYSTEM_LONG_RANGE_SENSORS] < 0) {
     print("LONG RANGE SENSORS ARE INOPERABLE");
     return;
   }
@@ -799,7 +837,7 @@ async function commandLongRangeScan() {
 
 async function commandPhaserControl() {
   // 4250 REM PHASER CONTROL CODE BEGINS HERE
-  if (gameState.systemsDamage[4] < 0) {
+  if (gameState.systemsDamage[SYSTEM_PHASER_CONTROL] < 0) {
     print("PHASERS INOPERATIVE");
     return;
   }
@@ -812,7 +850,7 @@ async function commandPhaserControl() {
     return;
   }
 
-  if (gameState.systemsDamage[8] < 0) {
+  if (gameState.systemsDamage[SYSTEM_LIBRARY_COMPUTER] < 0) {
     print("COMPUTER FAILURE HAMPERS ACCURACY");
   }
 
@@ -835,7 +873,7 @@ async function commandPhaserControl() {
   gameState.energyRemaining = gameState.energyRemaining - X;
 
   // TODO: is this a bug? D[8] is computer, D[7] is shields - but D[7] is what was in the original source!
-  if (gameState.systemsDamage[7] < 0) {
+  if (gameState.systemsDamage[SYSTEM_SHIELD_CONTROL] < 0) {
     X = X * Math.random();
   }
 
@@ -905,7 +943,7 @@ async function commandPhotonTorpedo() {
   if (gameState.photonTorpedoesRemaining <= 0) {
     return print("ALL PHOTON TORPEDOES EXPENDED");
   }
-  if (gameState.systemsDamage[5] < 0) {
+  if (gameState.systemsDamage[SYSTEM_PHOTON_TUBES] < 0) {
     return print("PHOTON TUBES ARE NOT OPERATIONAL");
   }
 
@@ -1032,7 +1070,9 @@ async function enemiesShoot() {
       continue;
     }
 
-    const H = Math.floor((gameState.sectorEnemies[I][3] / FND(I)) * (2 + RND(1)));
+    const H = Math.floor(
+      (gameState.sectorEnemies[I][3] / FND(I)) * (2 + RND(1))
+    );
     gameState.shieldsCurrent = gameState.shieldsCurrent - H;
     gameState.sectorEnemies[I][3] = Math.floor(
       gameState.sectorEnemies[I][3] / (3 + RND(0))
@@ -1058,17 +1098,19 @@ async function enemiesShoot() {
       continue;
     }
 
-    let R1 = FNR(1);
-    gameState.systemsDamage[R1] =
-      gameState.systemsDamage[R1] - H / gameState.shieldsCurrent - 0.5 * RND(1);
-    let G2$ = deviceNameByIndex(R1);
-    print(`DAMAGE CONTROL REPORTS ${G2$} DAMAGED BY THE HIT`);
+    const systemIdx = randomInt(shipSystems.length);
+    const systemName = shipSystems[systemIdx];
+    gameState.systemsDamage[systemName] =
+      gameState.systemsDamage[systemName] -
+      H / gameState.shieldsCurrent -
+      0.5 * RND(1);
+    print(`DAMAGE CONTROL REPORTS ${systemName} DAMAGED BY THE HIT`);
   }
 }
 
 async function commandShieldControl() {
   // 5520 REM SHIELD CONTROL
-  if (gameState.systemsDamage[7] < 0) {
+  if (gameState.systemsDamage[SYSTEM_SHIELD_CONTROL] < 0) {
     print("SHIELD CONTROL INOPERABLE");
     return;
   }
@@ -1103,7 +1145,7 @@ async function commandShieldControl() {
 async function commandDamageControl() {
   // 5680 REM DAMAGE CONTROL
   // 5690
-  if (gameState.systemsDamage[6] < 0) {
+  if (gameState.systemsDamage[SYSTEM_DAMAGE_CONTROL] < 0) {
     print("DAMAGE CONTROL REPORT NOT AVAILABLE");
     return;
   }
@@ -1111,20 +1153,19 @@ async function commandDamageControl() {
   // 5910
   print();
   print("DEVICE             STATE OF REPAIR");
-  for (let R1 = 1; R1 <= 8; R1++) {
-    let G2$ = deviceNameByIndex(R1);
+  for (const systemName of shipSystems) {
     print(
-      G2$,
-      Z$.substring(0, 25 - G2$.length),
-      Math.floor(gameState.systemsDamage[R1] * 100) * 0.01
+      systemName,
+      Z$.substring(0, 25 - systemName.length),
+      Math.floor(gameState.systemsDamage[systemName] * 100) * 0.01
     );
   }
   print();
 
   if (gameState.isDocked != 0) {
     let repairTimeEstimate = 0;
-    for (let I = 1; I <= 8; I++) {
-      if (gameState.systemsDamage[I] < 0) {
+    for (const systemName of shipSystems) {
+      if (gameState.systemsDamage[systemName] < 0) {
         repairTimeEstimate = repairTimeEstimate + 0.1;
       }
     }
@@ -1146,8 +1187,8 @@ async function commandDamageControl() {
     if (A$.toUpperCase() != "Y") {
       return;
     }
-    for (let I = 1; I <= 8; I++) {
-      gameState.systemsDamage[I] = 0;
+    for (const systemName of shipSystems) {
+      gameState.systemsDamage[systemName] = 0;
     }
     gameState.stardateCurrent =
       gameState.stardateCurrent + repairTimeEstimate + 0.1;
@@ -1157,7 +1198,7 @@ async function commandDamageControl() {
 async function commandLibraryComputer() {
   // 7280 REM LIBRARY COMPUTER CODE
   // 7290
-  if (gameState.systemsDamage[8] < 0) {
+  if (gameState.systemsDamage[SYSTEM_LIBRARY_COMPUTER] < 0) {
     print("COMPUTER DISABLED");
     return;
   }
@@ -1484,6 +1525,8 @@ const COURSE_TO_XY = [
 
 function courseToXY(course) {
   const courseIdx = Math.floor(course);
+  //3110 X1=C(C1,1)+(C(C1+1,1)-C(C1,1))*(C1-INT(C1)):X=S1:Y=S2
+  //3140 X2=C(C1,2)+(C(C1+1,2)-C(C1,2))*(C1-INT(C1)):Q4=Q1:Q5=Q2
   const X1 =
     COURSE_TO_XY[courseIdx][0] +
     (COURSE_TO_XY[courseIdx + 1][0] - COURSE_TO_XY[courseIdx][0]) *
@@ -1523,22 +1566,6 @@ function insertInStringForQuadrant(A$, Z1, Z2) {
     gameState.quadrantMap.slice(0, S8) +
     A$ +
     gameState.quadrantMap.slice(S8 + 3);
-}
-
-// 8780 REM PRINTS DEVICE NAME
-function deviceNameByIndex(R1) {
-  const G2$ = [
-    "", // FIXME: 1-based index
-    "WARP ENGINES",
-    "SHORT RANGE SENSORS",
-    "LONG RANGE SENSORS",
-    "PHASER CONTROL",
-    "PHOTON TUBES",
-    "DAMAGE CONTROL",
-    "SHIELD CONTROL",
-    "LIBRARY-COMPUTER",
-  ][R1];
-  return G2$;
 }
 
 // 9010 REM QUADRANT NAME IN G2$ FROM Z4,Z5 (=Q1,Q2)
