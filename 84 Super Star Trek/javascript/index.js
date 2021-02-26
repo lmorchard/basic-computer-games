@@ -17,7 +17,10 @@ term.focus();
 
 onExit(function exit() {
   // TODO: reset the game without a reload.
-  window.location.reload();
+  setTimeout(() => {
+    window.alert("GAME OVER");
+    window.location.reload();  
+  }, 1000);
 });
 
 onPrint(function print(...messages) {

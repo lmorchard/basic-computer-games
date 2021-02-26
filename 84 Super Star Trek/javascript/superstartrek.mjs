@@ -40,29 +40,16 @@ const gameOptions = {
 };
 
 let gameState = {};
-
-export function setGameOptions(options = {}) {
-  Object.assign(gameOptions, options);
-}
-
-export function getGameState() {
-  return { ...gameState };
-}
-
 let print = () => {};
-export function onPrint(fn) {
-  print = fn;
-}
-
 let input = () => {};
-export function onInput(fn) {
-  input = fn;
-}
-
 let exit = () => {};
-export function onExit(fn) {
-  exit = fn;
-}
+
+export const setGameOptions = (options = {}) =>
+  Object.assign(gameOptions, options);
+export const getGameState = () => ({ ...gameState });
+export const onPrint = (fn) => (print = fn);
+export const onInput = (fn) => (input = fn);
+export const onExit = (fn) => (exit = fn);
 
 const randomInt = (max, min = 0) =>
   Math.floor(min + Math.random() * (max - min));
@@ -430,30 +417,16 @@ async function acceptCommand() {
 async function shortRangeSensorScanAndStartup() {
   // 6420 REM SHORT RANGE SENSOR SCAN & STARTUP SUBROUTINE
   // 6430
-  gameState.isDocked = 0;
-  for (
-    let i = gameState.sectorPositionY - 1;
-    i <= gameState.sectorPositionY + 1;
-    i++
-  ) {
-    for (
-      let j = gameState.sectorPositionX - 1;
-      j <= gameState.sectorPositionX + 1;
-      j++
-    ) {
-      if (
-        Math.floor(i + 0.5) < 1 ||
-        Math.floor(i + 0.5) > 8 ||
-        Math.floor(j + 0.5) < 1 ||
-        Math.floor(j + 0.5) > 8
-      ) {
-        continue;
-      }
+  const { sectorPositionY: sY, sectorPositionX: sX } = gameState;
 
-      const Z3 = stringComparisonInQuadrantArray(">!<", i, j);
-      if (Z3 == 1) {
-        gameState.isDocked = 1;
-        break;
+  gameState.isDocked = 0;
+  for (let i = sY - 1; i <= sY + 1; i++) {
+    for (let j = sX - 1; j <= sX + 1; j++) {
+      if (i >= 1 || i <= 8 || j >= 1 || j <= 8) {
+        if (stringComparisonInQuadrantArray(">!<", i, j)) {
+          gameState.isDocked = 1;
+          break;
+        }
       }
     }
   }
@@ -514,7 +487,7 @@ async function commandCourseControl() {
   // 2290 REM COURSE CONTROL BEGINS HERE
   let C1 = parseFloat(await input("COURSE (0-9)"));
   if (C1 == 9) C1 = 1;
-  if (C1 < 1 || C1 > 9) {
+  if (isNaN(C1) || C1 < 1 || C1 > 9) {
     print(
       `   ${gameOptions.nameNavigationOfficer} REPORTS, 'INCORRECT COURSE DATA, SIR!'`
     );
@@ -528,7 +501,7 @@ async function commandCourseControl() {
       })`
     )
   );
-  if (W1 == 0) return;
+  if (W1 == 0 || isNaN(W1)) return;
   if (gameState.systemsDamage[SYSTEM_WARP_ENGINES] < 0 && W1 > 0.2) {
     return print("WARP ENGINES ARE DAMAGED.  MAXIUM SPEED = WARP 0.2");
   }
@@ -762,6 +735,8 @@ async function commandCourseControl() {
     return endOfGame();
   }
 
+  await shortRangeSensorScanAndStartup();
+
   // 3470 REM SEE IF DOCKED, THEN GET COMMAND
   return acceptCommand();
 }
@@ -976,16 +951,13 @@ async function commandPhotonTorpedo() {
     }
 
     print(`               ${X3} , ${Y3}`);
-    const Z3 = stringComparisonInQuadrantArray("   ", X, Y);
-    if (Z3 == 0) {
+    if (!stringComparisonInQuadrantArray("   ", X, Y)) {
       break;
     }
   }
 
   // 5060
-  let Z3;
-  Z3 = stringComparisonInQuadrantArray("+K+", X, Y);
-  if (Z3 != 0) {
+  if (stringComparisonInQuadrantArray("+K+", X, Y)) {
     print(`*** ${gameOptions.nameEnemy} DESTROYED ***`);
     gameState.sectorEnemiesCount = gameState.sectorEnemiesCount - 1;
     gameState.enemiesRemaining = gameState.enemiesRemaining - 1;
@@ -1005,15 +977,13 @@ async function commandPhotonTorpedo() {
   }
 
   // 5210
-  Z3 = stringComparisonInQuadrantArray(" * ", X, Y);
-  if (Z3 != 0) {
+  if (stringComparisonInQuadrantArray(" * ", X, Y)) {
     print(`STAR AT ${X3} , ${Y3} ABSORBED TORPEDO ENERGY.`);
     enemiesShoot();
     return;
   }
 
-  Z3 = stringComparisonInQuadrantArray(">!<", X, Y);
-  if (Z3 != 0) {
+  if (stringComparisonInQuadrantArray(">!<", X, Y)) {
     print("*** STARBASE DESTROYED ***");
     gameState.sectorStarbasesCount = gameState.sectorStarbasesCount - 1;
     gameState.starbasesRemaining = gameState.starbasesRemaining - 1;
@@ -1197,6 +1167,8 @@ async function commandLibraryComputer() {
     return;
   }
 
+  await computerHelp();
+
   const A = parseInt(await input("COMPUTER ACTIVE AND AWAITING COMMAND"));
   if (A < 0) return;
 
@@ -1222,17 +1194,22 @@ async function commandLibraryComputer() {
       await computerGalaxyMap();
       break;
     default: {
-      print("FUNCTIONS AVAILABLE FROM LIBRARY-COMPUTER:");
-      print("   0 = CUMULATIVE GALACTIC RECORD");
-      print("   1 = STATUS REPORT");
-      print("   2 = PHOTON TORPEDO DATA");
-      print("   3 = STARBASE NAV DATA");
-      print("   4 = DIRECTION/DISTANCE CALCULATOR");
-      print("   5 = GALAXY 'REGION NAME' MAP");
-      print();
-      // :GOTO7320
+      await computerHelp();
+      break;
     }
   }
+}
+
+async function computerHelp() {
+  print("FUNCTIONS AVAILABLE FROM LIBRARY-COMPUTER:");
+  print("   0 = CUMULATIVE GALACTIC RECORD");
+  print("   1 = STATUS REPORT");
+  print("   2 = PHOTON TORPEDO DATA");
+  print("   3 = STARBASE NAV DATA");
+  print("   4 = DIRECTION/DISTANCE CALCULATOR");
+  print("   5 = GALAXY 'REGION NAME' MAP");
+  print();
+  // :GOTO7320
 }
 
 async function computerPhotonData() {
@@ -1254,11 +1231,10 @@ async function computerPhotonData() {
   for (let I = 1; I <= 3; I++) {
     if (gameState.sectorEnemies[I][3] <= 0) continue;
     computerDirectionCommon({
-      H8: 0,
-      W1: gameState.sectorEnemies[I][1],
-      X: gameState.sectorEnemies[I][2],
-      C1: gameState.sectorPositionY,
-      A: gameState.sectorPositionX,
+      fromY: gameState.sectorPositionY,
+      fromX: gameState.sectorPositionX,
+      toY: gameState.sectorEnemies[I][1],
+      toX: gameState.sectorEnemies[I][2],
     });
   }
 }
@@ -1273,10 +1249,10 @@ async function computerStarbaseData() {
   }
   print("FROM ENTERPRISE TO STARBASE:");
   computerDirectionCommon({
-    W1: gameState.sectorStarbaseY,
-    X: gameState.sectorStarbaseX,
-    C1: gameState.sectorPositionY,
-    A: gameState.sectorPositionX,
+    fromY: gameState.sectorPositionY,
+    fromX: gameState.sectorPositionX,
+    toY: gameState.sectorStarbaseY,
+    toX: gameState.sectorStarbaseX,
   });
 }
 
@@ -1289,83 +1265,23 @@ async function computerDirectionData() {
     `YOU ARE AT QUADRANT ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX} SECTOR ${gameState.sectorPositionY} , ${gameState.sectorPositionX}`
   );
   print("PLEASE ENTER");
-  const [C1, A] = await parseCoords("  INITIAL COORDINATES (X,Y)");
-  const [W1, X] = await parseCoords("  FINAL COORDINATES (X,Y)");
-  computerDirectionCommon({ W1, X, C1, A });
+  const [fromY, fromX] = await parseCoords("  INITIAL COORDINATES (Y,X)");
+  const [toY, toX] = await parseCoords("  FINAL COORDINATES (Y,X)");
+  computerDirectionCommon({ fromX, fromY, toX, toY });
 }
 
-async function computerDirectionCommon({ W1, X, C1, A }) {
-  X = X - A;
-  A = C1 - W1;
+async function computerDirectionCommon({ fromX, fromY, toX, toY }) {
+  const distance = Math.sqrt(
+    Math.pow(toX - fromX, 2) + Math.pow(toY - fromY, 2)
+  );
+  const direction =
+    1 +
+    (8 / (Math.PI * 2)) *
+      ((Math.atan2(0 - fromY - (0 - toY), fromX - toX) + Math.PI) %
+        (Math.PI * 2));
 
-  const goto8460 = () => {
-    // 8460
-    print(`DISTANCE = ${Math.sqrt(Math.pow(X, 2) + Math.pow(A, 2))}`);
-  };
-
-  const goto8290 = () => {
-    // 8290
-    if (Math.abs(A) > Math.abs(X)) {
-      // 8310
-      print(
-        `DIRECTION = ${
-          C1 + (Math.abs(A) - Math.abs(X) + Math.abs(A)) / Math.abs(A)
-        }`
-      );
-      return goto8460();
-    } else {
-      // 8330
-      print(`DIRECTION = ${C1 + Math.abs(A) / Math.abs(X)}`);
-      return goto8460();
-    }
-  };
-
-  // 8220:IFX<0THEN8350
-  if (X > 0) {
-    // 8250 IFA<0THEN8410
-    if (A < 0) {
-      C1 = 7;
-    } else {
-      // 8260 IFX>0THEN8280
-      if (X < 0) {
-        // 8270 IFA=0THENC1=5:  goto8290();
-        if (A == 0) {
-          C1 = 5;
-          return goto8290();
-        }
-      }
-      // 8280 C1=1
-      C1 = 1;
-      return goto8290();
-    }
-  } else {
-    // 8350 IFA>0THENC1=3:GOTO8420
-    if (A < 0) {
-      // 8360 IFX<>0THENC1=5:GOTO8290
-      if (X != 0) {
-        C1 = 5;
-        return goto8290();
-      }
-      // 8410 C1=7
-      C1 = 7;
-    } else {
-      C1 = 3;
-    }
-
-    // 8420
-    if (Math.abs(A) < Math.abs(X)) {
-      // 8430
-      print(
-        `DIRECTION = ${
-          C1 + (Math.abs(X) - Math.abs(A) + Math.abs(X)) / Math.abs(X)
-        }`
-      );
-    } else {
-      // 8450
-      print(`DIRECTION = ${C1 + Math.abs(X) / Math.abs(A)}`);
-    }
-    return goto8460();
-  }
+  print(`DISTANCE = ${distance}`);
+  print(`DIRECTION = ${direction}`);
 }
 
 async function computerStatusReport() {
@@ -1534,19 +1450,19 @@ function courseToXY(course) {
 
 function findEmptyPlaceInQuadrant() {
   let R1, R2;
-  let Z3 = 0;
-  while (Z3 == 0) {
+  let foundEmptyPlace = false;
+  while (foundEmptyPlace == 0) {
     R1 = FNR(1);
     R2 = FNR(1);
-    Z3 = stringComparisonInQuadrantArray("   ", R1, R2);
+    foundEmptyPlace = stringComparisonInQuadrantArray("   ", R1, R2);
   }
-  return [R1, R2, Z3];
+  return [R1, R2];
 }
 
 // 8820 REM STRING COMPARISON IN QUADRANT ARRAY
 function stringComparisonInQuadrantArray(A$, Z1, Z2) {
-  const S8 = (Math.floor(Z2 + 0.5) - 1) * 3 + (Math.floor(Z1 + 0.5) - 1) * 24;
-  return gameState.quadrantMap.substring(S8, S8 + 3) != A$ ? 0 : 1;
+  const S8 = (Z2 - 1) * 3 + (Z1 - 1) * 24;
+  return gameState.quadrantMap.substring(S8, S8 + 3) == A$;
 }
 
 // 8660 REM INSERT IN STRING ARRAY FOR QUADRANT
