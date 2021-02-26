@@ -22,6 +22,24 @@
  * BY USING "?" INSTEAD OF "PRINT" WHEN ENTERING LINES
  */
 
+export const setGameOptions = (options = {}) =>
+  Object.assign(gameOptions, options);
+export const getGameState = () => ({ ...gameState });
+export const onPrint = (fn) => (print = fn);
+export const onInput = (fn) => (input = fn);
+export const onExit = (fn) => (exit = fn);
+
+export async function gameMain() {
+  await gameReset();
+  await gameLoop();
+  exit();
+}
+
+let gameState = {};
+let print = () => {};
+let input = () => {};
+let exit = () => {};
+
 const gameOptions = {
   stardateStart: Math.floor(Math.random() * 20 + 20) * 100,
   timeLimit: 25 + Math.floor(Math.random() * 10),
@@ -39,55 +57,7 @@ const gameOptions = {
   nameChiefEngineer: "SCOTT",
 };
 
-let gameState = {};
-let print = () => {};
-let input = () => {};
-let exit = () => {};
-
-export const setGameOptions = (options = {}) =>
-  Object.assign(gameOptions, options);
-export const getGameState = () => ({ ...gameState });
-export const onPrint = (fn) => (print = fn);
-export const onInput = (fn) => (input = fn);
-export const onExit = (fn) => (exit = fn);
-
-const randomInt = (max, min = 0) =>
-  Math.floor(min + Math.random() * (max - min));
-
-const RND = () => Math.random();
-const FNR = () => Math.floor(Math.random() * 7.98 + 1.01);
-const FND = (I) =>
-  Math.sqrt(
-    Math.pow(gameState.sectorEnemies[I][1] - gameState.sectorPositionY, 2) +
-      Math.pow(gameState.sectorEnemies[I][2] - gameState.sectorPositionX, 2)
-  );
-
-const Z$ = "                         ";
-
-const SYSTEM_WARP_ENGINES = "WARP ENGINES";
-const SYSTEM_SHORT_RANGE_SENSORS = "SHORT RANGE SENSORS";
-const SYSTEM_LONG_RANGE_SENSORS = "LONG RANGE SENSORS";
-const SYSTEM_PHASER_CONTROL = "PHASER CONTROL";
-const SYSTEM_PHOTON_TUBES = "PHOTON TUBES";
-const SYSTEM_DAMAGE_CONTROL = "DAMAGE CONTROL";
-const SYSTEM_SHIELD_CONTROL = "SHIELD CONTROL";
-const SYSTEM_LIBRARY_COMPUTER = "LIBRARY-COMPUTER";
-
-const shipSystems = [
-  SYSTEM_WARP_ENGINES,
-  SYSTEM_SHORT_RANGE_SENSORS,
-  SYSTEM_LONG_RANGE_SENSORS,
-  SYSTEM_PHASER_CONTROL,
-  SYSTEM_PHOTON_TUBES,
-  SYSTEM_DAMAGE_CONTROL,
-  SYSTEM_SHIELD_CONTROL,
-  SYSTEM_LIBRARY_COMPUTER,
-];
-
-export async function gameMain() {
-  await gameReset();
-
-  // 10
+async function gameIntro() {
   print("\n".repeat(10));
   print("                                    ,------*------,");
   print("                    ,-------------   '---  ------'");
@@ -116,40 +86,39 @@ export async function gameMain() {
     } IN THE GALAXY FOR RESUPPLYING YOUR SHIP`
   );
   print();
-  // REM PRINT"HIT ANY KEY EXCEPT RETURN WHEN READY TO ACCEPT COMMAND"
-  //I = RND(1);
-  //REM IF INP(1)=13 THEN 1300
-
-  await newQuadrantEntered();
 }
 
 async function gameReset() {
-  gameState.quadrantMap = "";
-  gameState.alertCondition = "";
-  gameState.stardateCurrent = gameOptions.stardateStart;
-  gameState.isDocked = 0;
-  gameState.energyRemaining = gameOptions.energyMax;
-  gameState.photonTorpedoesRemaining = gameOptions.photonTorpedoesMax;
-  gameState.shieldsCurrent = 0;
-  // starbasesRemaining = 2; // Bug from original?
-  gameState.starbasesRemaining = 0;
-  gameState.enemiesRemaining = 0;
-  gameState.quadrantPositionY = FNR();
-  gameState.quadrantPositionX = FNR();
-  gameState.sectorPositionY = FNR();
-  gameState.sectorPositionX = FNR();
+  gameState = {
+    gameOver: false,
+    gameWon: false,
+    gameQuit: false,
+    destroyed: false,
+    shouldRestart: false,
+    quadrantMap: "",
+    alertCondition: "",
+    stardateCurrent: gameOptions.stardateStart,
+    isDocked: false,
+    energyRemaining: gameOptions.energyMax,
+    photonTorpedoesRemaining: gameOptions.photonTorpedoesMax,
+    shieldsCurrent: 0,
+    starbasesRemaining: 0,
+    enemiesRemaining: 0,
+    quadrantPositionY: FNR(),
+    quadrantPositionX: FNR(),
+    sectorPositionY: FNR(),
+    sectorPositionX: FNR(),
+    sectorEnemiesCount: 0,
+    sectorStarbasesCount: 0,
+    sectorStarsCount: 0,
+    galacticMap: [],
+    galacticMapDiscovered: [],
+  };
 
   gameState.systemsDamage = {};
   for (const systemName of shipSystems) {
     gameState.systemsDamage[systemName] = 0;
   }
-
-  gameState.sectorEnemiesCount = 0;
-  gameState.sectorStarbasesCount = 0;
-  gameState.sectorStarsCount = 0;
-
-  gameState.galacticMap = [];
-  gameState.galacticMapDiscovered = [];
 
   for (let i = 1; i <= 8; i++) {
     gameState.galacticMap[i] = [];
@@ -217,6 +186,9 @@ async function gameReset() {
   }
 
   gameState.enemiesInitialCount = gameState.enemiesRemaining;
+
+  await gameIntro();
+  await newQuadrantEntered();
 }
 
 async function newQuadrantEntered() {
@@ -294,10 +266,10 @@ async function newQuadrantEntered() {
     gameState.sectorEnemies[i][3] = 0;
   }
 
-  gameState.quadrantMap = Z$ + Z$ + Z$ + Z$ + Z$ + Z$ + Z$ + Z$.substr(0, 17);
+  gameState.quadrantMap = " ".repeat(3 * 8 * 8);
 
-  insertInStringForQuadrant(
-    "<*>",
+  insertInQuadrantMap(
+    QUADRANT_MAP_CELLS.hero,
     gameState.sectorPositionY,
     gameState.sectorPositionX
   );
@@ -305,41 +277,44 @@ async function newQuadrantEntered() {
   if (gameState.sectorEnemiesCount >= 1) {
     // 1720
     for (let i = 1; i <= gameState.sectorEnemiesCount; i++) {
-      const [R1, R2] = findEmptyPlaceInQuadrant();
-      insertInStringForQuadrant("+K+", R1, R2);
+      const [y, x] = findSpaceInQuadrantMap();
+      insertInQuadrantMap(QUADRANT_MAP_CELLS.enemy, y, x);
       gameState.sectorEnemies[i] = [
         undefined,
-        R1,
-        R2,
+        y,
+        x,
         gameOptions.enemyMaxShield * (0.5 + RND(1)),
       ];
     }
   }
 
   if (gameState.sectorStarbasesCount >= 1) {
-    // 1820
-    const [R1, R2] = findEmptyPlaceInQuadrant();
+    const [R1, R2] = findSpaceInQuadrantMap();
     gameState.sectorStarbaseY = R1;
     gameState.sectorStarbaseX = R2;
-    insertInStringForQuadrant(">!<", R1, R2);
+    insertInQuadrantMap(QUADRANT_MAP_CELLS.base, R1, R2);
   }
 
   for (let i = 1; i <= gameState.sectorStarsCount; i++) {
-    const [R1, R2] = findEmptyPlaceInQuadrant();
-    insertInStringForQuadrant(" * ", R1, R2);
+    insertInQuadrantMap(QUADRANT_MAP_CELLS.star, ...findSpaceInQuadrantMap());
   }
 
-  // 1980 GOSUB6430
-  await shortRangeSensorScanAndStartup();
+  return shortRangeSensorScanAndStartup();
+}
 
-  const continueCommandLoop = true;
-  while (continueCommandLoop) {
+async function gameLoop() {
+  while (!gameState.gameOver) {
     await acceptCommand();
+    if (gameState.gameOver) {
+      await endOfGame();
+    }
+    if (gameState.shouldRestart) {
+      await gameReset();
+    }
   }
 }
 
 async function acceptCommand() {
-  // 1990
   if (
     gameState.shieldsCurrent + gameState.energyRemaining <= 10 ||
     (gameState.energyRemaining < 10 &&
@@ -349,87 +324,52 @@ async function acceptCommand() {
     print("** FATAL ERROR **   YOU'VE JUST STRANDED YOUR SHIP IN SPACE");
     print("YOU HAVE INSUFFICIENT MANEUVERING ENERGY, AND SHIELD CONTROL");
     print("IS PRESENTLY INCAPABLE OF CROSS-CIRCUITING TO ENGINE ROOM!!");
-    endOfGame();
+    gameState.gameOver = true;
+    return;
   }
 
-  // 2060
-  const A$ = await input("COMMAND");
-  // 2140
-  switch (A$.toUpperCase()) {
-    case "NAV": {
-      await commandCourseControl();
-      break;
-    }
-    case "SRS": {
-      await shortRangeSensorScanAndStartup();
-      break;
-    }
-    case "LRS": {
-      await commandLongRangeScan();
-      break;
-    }
-    case "PHA": {
-      await commandPhaserControl();
-      break;
-    }
-    case "TOR": {
-      await commandPhotonTorpedo();
-      break;
-    }
-    case "SHE": {
-      await commandShieldControl();
-      break;
-    }
-    case "DAM": {
-      await commandDamageControl();
-      break;
-    }
-    case "COM": {
-      await commandLibraryComputer();
-      break;
-    }
-    case "XXX": {
-      return endOfGame({ showStardate: false });
-    }
-    case "DUMP": {
-      console.log(JSON.stringify(gameState));
-      break;
-    }
-    default: {
-      print("ENTER ONE OF THE FOLLOWING:");
-      print("  NAV  (TO SET COURSE)");
-      print("  SRS  (FOR SHORT RANGE SENSOR SCAN)");
-      print("  LRS  (FOR LONG RANGE SENSOR SCAN)");
-      print("  PHA  (TO FIRE PHASERS)");
-      print("  TOR  (TO FIRE PHOTON TORPEDOES)");
-      print("  SHE  (TO RAISE OR LOWER SHIELDS)");
-      print("  DAM  (FOR DAMAGE CONTROL REPORTS)");
-      print("  COM  (TO CALL ON LIBRARY-COMPUTER)");
-      print("  XXX  (TO RESIGN YOUR COMMAND)");
-      print();
-      // GOTO 1990
-    }
-  }
+  const commandInput = (await input("COMMAND")).trim().toUpperCase();
+  const command = COMMANDS[commandInput] || commandHelp;
+  await command();
 }
 
 /************************************************************************/
 
-async function shortRangeSensorScanAndStartup() {
-  // 6420 REM SHORT RANGE SENSOR SCAN & STARTUP SUBROUTINE
-  // 6430
-  const { sectorPositionY: sY, sectorPositionX: sX } = gameState;
+const COMMANDS = {
+  NAV: commandCourseControl,
+  SRS: shortRangeSensorScanAndStartup,
+  LRS: commandLongRangeScan,
+  PHA: commandPhaserControl,
+  TOR: commandPhotonTorpedo,
+  SHE: commandShieldControl,
+  DAM: commandDamageControl,
+  COM: commandLibraryComputer,
+  XXX: () => {
+    // todo more confirmation here?
+    gameState.gameOver = true;
+    gameState.gameQuit = true;
+  },
+  DUMP: () => {
+    console.log(JSON.stringify(gameState));
+  },
+};
 
-  gameState.isDocked = 0;
-  for (let i = sY - 1; i <= sY + 1; i++) {
-    for (let j = sX - 1; j <= sX + 1; j++) {
-      if (i >= 1 || i <= 8 || j >= 1 || j <= 8) {
-        if (stringComparisonInQuadrantArray(">!<", i, j)) {
-          gameState.isDocked = 1;
-          break;
-        }
-      }
-    }
-  }
+async function commandHelp() {
+  print("ENTER ONE OF THE FOLLOWING:");
+  print("  NAV  (TO SET COURSE)");
+  print("  SRS  (FOR SHORT RANGE SENSOR SCAN)");
+  print("  LRS  (FOR LONG RANGE SENSOR SCAN)");
+  print("  PHA  (TO FIRE PHASERS)");
+  print("  TOR  (TO FIRE PHOTON TORPEDOES)");
+  print("  SHE  (TO RAISE OR LOWER SHIELDS)");
+  print("  DAM  (FOR DAMAGE CONTROL REPORTS)");
+  print("  COM  (TO CALL ON LIBRARY-COMPUTER)");
+  print("  XXX  (TO RESIGN YOUR COMMAND)");
+  print();
+}
+
+async function shortRangeSensorScanAndStartup() {
+  checkIfDocked();
 
   if (gameState.isDocked == 1) {
     gameState.alertCondition = "DOCKED";
@@ -445,42 +385,57 @@ async function shortRangeSensorScanAndStartup() {
   }
 
   if (gameState.systemsDamage[SYSTEM_SHORT_RANGE_SENSORS] < 0) {
-    // 6730
     print();
     print("*** SHORT RANGE SENSORS ARE OUT ***");
     print();
     return;
   }
 
-  // 6770
-  const O1$ = "---------------------------------";
-  print(O1$);
-  for (let I = 1; I <= 8; I++) {
-    print(
-      " " +
-        gameState.quadrantMap.substring((I - 1) * 24, (I - 1) * 24 + 24) +
-        [
-          "",
-          `        STARDATE           ${
-            Math.floor(gameState.stardateCurrent * 10) * 0.1
-          }`,
-          `        CONDITION          ${gameState.alertCondition}`,
-          `        QUADRANT           ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX}`,
-          `        SECTOR             ${gameState.sectorPositionY} , ${gameState.sectorPositionX}`,
-          `        PHOTON TORPEDOES   ${Math.floor(
-            gameState.photonTorpedoesRemaining
-          )}`,
-          `        TOTAL ENERGY       ${Math.floor(
-            gameState.energyRemaining + gameState.shieldsCurrent
-          )}`,
-          `        SHIELDS            ${Math.floor(gameState.shieldsCurrent)}`,
-          `        ${gameOptions.nameEnemies} REMAINING ${Math.floor(
-            gameState.enemiesRemaining
-          )}`,
-        ][I]
-    );
+  const statusLines = [
+    `STARDATE           ${Math.floor(gameState.stardateCurrent * 10) * 0.1}`,
+    `CONDITION          ${gameState.alertCondition}`,
+    `QUADRANT           ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX}`,
+    `SECTOR             ${gameState.sectorPositionY} , ${gameState.sectorPositionX}`,
+    `PHOTON TORPEDOES   ${gameState.photonTorpedoesRemaining}`,
+    `TOTAL ENERGY       ${
+      gameState.energyRemaining + gameState.shieldsCurrent
+    }`,
+    `SHIELDS            ${gameState.shieldsCurrent}`,
+    `${gameOptions.nameEnemies} REMAINING ${gameState.enemiesRemaining}`,
+  ];
+
+  const quadrantMapFormatted = gameState.quadrantMap
+    // Split the map into lines of 24 chars
+    .match(/.{24}/g)
+    // Split each line into cells of 3 chars
+    .map((line) => line.match(/.{3}/g))
+    // Format each line with Y coord, spaced out cells, and a line of status
+    .map(
+      (line, idx) =>
+        ` ${idx + 1}  ` + line.join(" ") + " ".repeat(8) + statusLines[idx]
+    )
+    // Finally, join all the lines with returns
+    .join("\n");
+
+  print("     1   2   3   4   5   6   7   8 ");
+  print("   ---------------------------------");
+  print(quadrantMapFormatted);
+  print("   ---------------------------------");
+}
+
+function checkIfDocked() {
+  const { sectorPositionY: sY, sectorPositionX: sX } = gameState;
+  for (let i = sY - 1; i <= sY + 1; i++) {
+    for (let j = sX - 1; j <= sX + 1; j++) {
+      if (i >= 1 || i <= 8 || j >= 1 || j <= 8) {
+        if (findInQuadrantMap(QUADRANT_MAP_CELLS.base, i, j)) {
+          gameState.isDocked = true;
+          return;
+        }
+      }
+    }
   }
-  print(O1$);
+  gameState.isDocked = false;
 }
 
 async function commandCourseControl() {
@@ -530,16 +485,16 @@ async function commandCourseControl() {
 
   for (let I = 1; I <= 3; I++) {
     if (gameState.sectorEnemies[I][3] > 0) {
-      insertInStringForQuadrant(
-        "   ",
+      insertInQuadrantMap(
+        QUADRANT_MAP_CELLS.empty,
         gameState.sectorEnemies[I][1],
         gameState.sectorEnemies[I][2]
       );
-      const [R1, R2] = findEmptyPlaceInQuadrant();
+      const [R1, R2] = findSpaceInQuadrantMap();
       gameState.sectorEnemies[I][1] = R1;
       gameState.sectorEnemies[I][2] = R2;
-      insertInStringForQuadrant(
-        "+K+",
+      insertInQuadrantMap(
+        QUADRANT_MAP_CELLS.enemy,
         gameState.sectorEnemies[I][1],
         gameState.sectorEnemies[I][2]
       );
@@ -595,8 +550,8 @@ async function commandCourseControl() {
   }
 
   // 3060 REM BEGIN MOVING STARSHIP
-  insertInStringForQuadrant(
-    "   ",
+  insertInQuadrantMap(
+    QUADRANT_MAP_CELLS.empty,
     Math.floor(gameState.sectorPositionY),
     Math.floor(gameState.sectorPositionX)
   );
@@ -679,7 +634,8 @@ async function commandCourseControl() {
           gameState.stardateCurrent >
           gameOptions.stardateStart + gameOptions.timeLimit
         ) {
-          return endOfGame();
+          gameState.gameOver = true;
+          return;
         }
       }
 
@@ -692,7 +648,7 @@ async function commandCourseControl() {
 
       gameState.stardateCurrent = gameState.stardateCurrent + 1;
       maneuverEnergy(sectorsToWarp);
-      return await newQuadrantEntered();
+      return newQuadrantEntered();
     }
 
     // 3240
@@ -714,8 +670,8 @@ async function commandCourseControl() {
   gameState.sectorPositionY = Math.floor(gameState.sectorPositionY);
   gameState.sectorPositionX = Math.floor(gameState.sectorPositionX);
 
-  insertInStringForQuadrant(
-    "<*>",
+  insertInQuadrantMap(
+    QUADRANT_MAP_CELLS.hero,
     Math.floor(gameState.sectorPositionY),
     Math.floor(gameState.sectorPositionX)
   );
@@ -732,13 +688,11 @@ async function commandCourseControl() {
     gameState.stardateCurrent >
     gameOptions.stardateStart + gameOptions.timeLimit
   ) {
-    return endOfGame();
+    gameState.gameOver = true;
+    return;
   }
 
   await shortRangeSensorScanAndStartup();
-
-  // 3470 REM SEE IF DOCKED, THEN GET COMMAND
-  return acceptCommand();
 }
 
 function maneuverEnergy(sectorsToWarp) {
@@ -872,8 +826,8 @@ async function commandPhaserControl() {
       gameState.sectorEnemiesCount = gameState.sectorEnemiesCount - 1;
       gameState.enemiesRemaining = gameState.enemiesRemaining - 1;
 
-      insertInStringForQuadrant(
-        "   ",
+      insertInQuadrantMap(
+        QUADRANT_MAP_CELLS.empty,
         gameState.sectorEnemies[I][1],
         gameState.sectorEnemies[I][2]
       );
@@ -893,7 +847,9 @@ async function commandPhaserControl() {
         ];
 
       if (gameState.enemiesRemaining <= 0) {
-        return endOfGame({ won: true });
+        gameState.gameOver = true;
+        gameState.gameWon = true;
+        return;
       }
     } else {
       print(
@@ -951,19 +907,23 @@ async function commandPhotonTorpedo() {
     }
 
     print(`               ${X3} , ${Y3}`);
-    if (!stringComparisonInQuadrantArray("   ", X, Y)) {
+    if (!findInQuadrantMap(QUADRANT_MAP_CELLS.empty, X, Y)) {
       break;
     }
   }
 
   // 5060
-  if (stringComparisonInQuadrantArray("+K+", X, Y)) {
+  if (findInQuadrantMap(QUADRANT_MAP_CELLS.enemy, X, Y)) {
     print(`*** ${gameOptions.nameEnemy} DESTROYED ***`);
     gameState.sectorEnemiesCount = gameState.sectorEnemiesCount - 1;
     gameState.enemiesRemaining = gameState.enemiesRemaining - 1;
+
     if (gameState.enemiesRemaining <= 0) {
-      return endOfGame({ won: true });
+      gameState.gameOver = true;
+      gameState.gameWon = true;
+      return;
     }
+
     // 5150
     for (let I = 1; I <= 3; I++) {
       if (
@@ -977,13 +937,13 @@ async function commandPhotonTorpedo() {
   }
 
   // 5210
-  if (stringComparisonInQuadrantArray(" * ", X, Y)) {
+  if (findInQuadrantMap(QUADRANT_MAP_CELLS.star, X, Y)) {
     print(`STAR AT ${X3} , ${Y3} ABSORBED TORPEDO ENERGY.`);
     enemiesShoot();
     return;
   }
 
-  if (stringComparisonInQuadrantArray(">!<", X, Y)) {
+  if (findInQuadrantMap(QUADRANT_MAP_CELLS.base, X, Y)) {
     print("*** STARBASE DESTROYED ***");
     gameState.sectorStarbasesCount = gameState.sectorStarbasesCount - 1;
     gameState.starbasesRemaining = gameState.starbasesRemaining - 1;
@@ -996,7 +956,8 @@ async function commandPhotonTorpedo() {
     ) {
       print("THAT DOES IT, CAPTAIN!!  YOU ARE HEREBY RELIEVED OF COMMAND");
       print("AND SENTENCED TO 99 STARDATES AT HARD LABOR ON CYGNUS 12!!");
-      return endOfGame();
+      gameState.gameOver = true;
+      return;
     } else {
       print("STARFLEET COMMAND REVIEWING YOUR RECORD TO CONSIDER");
       print("COURT MARTIAL!");
@@ -1005,7 +966,7 @@ async function commandPhotonTorpedo() {
   }
 
   // 5430
-  insertInStringForQuadrant("   ", X, Y);
+  insertInQuadrantMap(QUADRANT_MAP_CELLS.empty, X, Y);
   gameState.galacticMap[gameState.quadrantPositionY][
     gameState.quadrantPositionX
   ] =
@@ -1025,7 +986,7 @@ async function enemiesShoot() {
   if (gameState.sectorEnemiesCount <= 0) {
     return;
   }
-  if (gameState.isDocked != 0) {
+  if (gameState.isDocked) {
     print("STARBASE SHIELDS PROTECT THE ENTERPRISE");
     return;
   }
@@ -1051,7 +1012,9 @@ async function enemiesShoot() {
     );
 
     if (gameState.shieldsCurrent <= 0) {
-      return endOfGame({ destroyed: true });
+      gameState.gameOver = true;
+      gameState.destroyed = true;
+      return;
     }
 
     print("      <SHIELDS DOWN TO ", gameState.shieldsCurrent, " UNITS>");
@@ -1166,39 +1129,23 @@ async function commandLibraryComputer() {
     print("COMPUTER DISABLED");
     return;
   }
-
-  await computerHelp();
-
-  const A = parseInt(await input("COMPUTER ACTIVE AND AWAITING COMMAND"));
-  if (A < 0) return;
-
-  // 7350
+  const commandIdx = parseInt(
+    await input("COMPUTER ACTIVE AND AWAITING COMMAND")
+  );
+  if (commandIdx < 0) return;
+  const command = COMMANDS_COMPUTER[commandIdx] || computerHelp;
   print();
-  switch (A) {
-    case 0:
-      await computerCumulativeRecord();
-      break;
-    case 1:
-      await computerStatusReport();
-      break;
-    case 2:
-      await computerPhotonData();
-      break;
-    case 3:
-      await computerStarbaseData();
-      break;
-    case 4:
-      await computerDirectionData();
-      break;
-    case 5:
-      await computerGalaxyMap();
-      break;
-    default: {
-      await computerHelp();
-      break;
-    }
-  }
+  await command();
 }
+
+const COMMANDS_COMPUTER = [
+  computerCumulativeRecord,
+  computerStatusReport,
+  computerPhotonData,
+  computerStarbaseData,
+  computerDirectionData,
+  computerGalaxyMap,
+];
 
 async function computerHelp() {
   print("FUNCTIONS AVAILABLE FROM LIBRARY-COMPUTER:");
@@ -1285,7 +1232,8 @@ async function computerDirectionCommon({ fromX, fromY, toX, toY }) {
 }
 
 async function computerStatusReport() {
-  print("   STATUS REPORT:");
+  print("STATUS REPORT:");
+  print();
   print(
     `${
       gameState.enemiesRemaining > 1
@@ -1355,10 +1303,10 @@ async function computerCommonMap(H8, G5) {
       }
     } else {
       let G2$;
-      G2$ = buildQuadrantName(I, 1, G5);
+      G2$ = buildQuadrantName(I, 1, true);
       let J0 = Math.floor(12 - 0.5 * G2$.length);
       out += `  ${" ".repeat(J0)}${G2$}${" ".repeat(J0)}`;
-      G2$ = buildQuadrantName(I, 5, G5);
+      G2$ = buildQuadrantName(I, 5, true);
       J0 = Math.floor(12 - 0.5 * G2$.length);
       out += `${" ".repeat(J0)}${G2$}`;
     }
@@ -1367,24 +1315,17 @@ async function computerCommonMap(H8, G5) {
   }
 }
 
-async function endOfGame({
-  showStardate = true,
-  destroyed = false,
-  won = false,
-} = {}) {
-  // 6210 REM END OF GAME
-  if (destroyed) {
+async function endOfGame() {
+  if (gameState.destroyed) {
     print();
     print(
       "THE ENTERPRISE HAS BEEN DESTROYED.  THEN FEDERATION WILL BE CONQUERED"
     );
   }
 
-  if (showStardate) {
-    print("IT IS STARDATE ", gameState.stardateCurrent);
-  }
+  print("IT IS STARDATE ", gameState.stardateCurrent);
 
-  if (!won) {
+  if (!gameState.gameWon) {
     print(
       `THERE WERE ${gameState.enemiesRemaining} ${gameOptions.nameEnemy} BATTLE CRUISERS LEFT AT`
     );
@@ -1410,14 +1351,13 @@ async function endOfGame({
 
   if (gameState.starbasesRemaining > 0) {
     print("THE FEDERATION IS IN NEED OF A NEW STARSHIP COMMANDER");
-    //print("FOR A SIMILAR MISSION -- IF THERE IS A VOLUNTEER,");
-    //const A$ = await input("LET HIM STEP FORWARD AND ENTER 'AYE'");
-    // HACK: recursive call to main seem dirty, but better than a GOTO
-    //if (A$.toUpperCase() == 'AYE') return main();
+    print("FOR A SIMILAR MISSION -- IF THERE IS A VOLUNTEER,");
+    const A$ = await input("LET HIM STEP FORWARD AND ENTER 'AYE'");
+    if (A$.toUpperCase() == "AYE") {
+      gameState.shouldRestart = true;
+      return;
+    }
   }
-
-  // 6360 END
-  exit();
 }
 
 const COURSE_TO_XY = [
@@ -1448,67 +1388,106 @@ function courseToXY(course) {
   return [X1, X2];
 }
 
-function findEmptyPlaceInQuadrant() {
-  let R1, R2;
-  let foundEmptyPlace = false;
-  while (foundEmptyPlace == 0) {
+function findSpaceInQuadrantMap() {
+  let R1,
+    R2,
+    foundEmptyPlace = false;
+  while (!foundEmptyPlace) {
     R1 = FNR(1);
     R2 = FNR(1);
-    foundEmptyPlace = stringComparisonInQuadrantArray("   ", R1, R2);
+    foundEmptyPlace = findInQuadrantMap(QUADRANT_MAP_CELLS.empty, R1, R2);
   }
   return [R1, R2];
 }
 
-// 8820 REM STRING COMPARISON IN QUADRANT ARRAY
-function stringComparisonInQuadrantArray(A$, Z1, Z2) {
-  const S8 = (Z2 - 1) * 3 + (Z1 - 1) * 24;
-  return gameState.quadrantMap.substring(S8, S8 + 3) == A$;
+function findInQuadrantMap(str, y, x) {
+  const idx = (x - 1) * 3 + (y - 1) * 24;
+  return gameState.quadrantMap.substring(idx, idx + 3) == str;
 }
 
 // 8660 REM INSERT IN STRING ARRAY FOR QUADRANT
-function insertInStringForQuadrant(A$, Z1, Z2) {
+function insertInQuadrantMap(str, y, x) {
   // 8670
-  const S8 = Math.floor(Z2 - 0.5) * 3 + Math.floor(Z1 - 0.5) * 24;
-  if (A$.length != 3) {
+  const S8 = (x - 1) * 3 + (y - 1) * 24;
+  if (str.length != 3) {
     throw "ERROR";
   }
   gameState.quadrantMap =
     gameState.quadrantMap.slice(0, S8) +
-    A$ +
+    str +
     gameState.quadrantMap.slice(S8 + 3);
 }
 
-// 9010 REM QUADRANT NAME IN G2$ FROM Z4,Z5 (=Q1,Q2)
-// 9030
-function buildQuadrantName(Z4, Z5, G5) {
-  let G2$;
-  if (Z5 <= 4) {
-    G2$ = [
-      "", // FIXME: 1-based index
-      "ANTARES",
-      "RIGEL",
-      "PROCYON",
-      "VEGA",
-      "CANOPUS",
-      "ALTAIR",
-      "SAGITTARIUS",
-      "POLLUX",
-    ][Z4];
-  } else {
-    G2$ = [
-      "", // FIXME: 1-based index
-      "SIRIUS",
-      "DENEB",
-      "CAPELLA",
-      "BETELGEUSE",
-      "ALDEBARAN",
-      "REGULUS",
-      "ARCTURUS",
-      "SPICA",
-    ][Z4];
-  }
-  if (G5 != 1) {
-    G2$ = G2$ + ["", " I", " II", " III", " IV"][Z5 % 4];
-  }
-  return G2$;
+function buildQuadrantName(y, x, regionNameOnly = false) {
+  const xIdx = x - 1;
+  const yIdx = y - 1;
+  const name = QUADRANT_NAMES[xIdx < 4 ? 0 : 1][yIdx];
+  return `${name}${regionNameOnly ? "" : ` ${QUADRANT_NUMBERS[xIdx % 4]}`}`;
 }
+
+const randomInt = (max, min = 0) =>
+  Math.floor(min + Math.random() * (max - min));
+
+const RND = () => Math.random();
+const FNR = () => randomInt(8, 1); //Math.floor(Math.random() * 7.98 + 1.01);
+
+const FND = (I) =>
+  Math.sqrt(
+    Math.pow(gameState.sectorEnemies[I][1] - gameState.sectorPositionY, 2) +
+      Math.pow(gameState.sectorEnemies[I][2] - gameState.sectorPositionX, 2)
+  );
+
+const Z$ = "                         ";
+
+const QUADRANT_MAP_CELLS = {
+  empty: "   ",
+  star: " * ",
+  base: ">!<",
+  hero: "<*>",
+  enemy: "+K+",
+};
+
+const QUADRANT_NAMES = [
+  [
+    "ANTARES",
+    "RIGEL",
+    "PROCYON",
+    "VEGA",
+    "CANOPUS",
+    "ALTAIR",
+    "SAGITTARIUS",
+    "POLLUX",
+  ],
+  [
+    "SIRIUS",
+    "DENEB",
+    "CAPELLA",
+    "BETELGEUSE",
+    "ALDEBARAN",
+    "REGULUS",
+    "ARCTURUS",
+    "SPICA",
+  ],
+];
+
+const QUADRANT_NUMBERS = ["I", "II", "III", "IV"];
+
+const SYSTEM_WARP_ENGINES = "WARP ENGINES";
+const SYSTEM_SHORT_RANGE_SENSORS = "SHORT RANGE SENSORS";
+const SYSTEM_LONG_RANGE_SENSORS = "LONG RANGE SENSORS";
+const SYSTEM_PHASER_CONTROL = "PHASER CONTROL";
+const SYSTEM_PHOTON_TUBES = "PHOTON TUBES";
+const SYSTEM_DAMAGE_CONTROL = "DAMAGE CONTROL";
+const SYSTEM_SHIELD_CONTROL = "SHIELD CONTROL";
+const SYSTEM_LIBRARY_COMPUTER = "LIBRARY-COMPUTER";
+
+const shipSystems = [
+  SYSTEM_WARP_ENGINES,
+  SYSTEM_SHORT_RANGE_SENSORS,
+  SYSTEM_LONG_RANGE_SENSORS,
+  SYSTEM_PHASER_CONTROL,
+  SYSTEM_PHOTON_TUBES,
+  SYSTEM_DAMAGE_CONTROL,
+  SYSTEM_SHIELD_CONTROL,
+  SYSTEM_LIBRARY_COMPUTER,
+];
