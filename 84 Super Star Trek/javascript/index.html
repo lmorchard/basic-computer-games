@@ -7,14 +7,15 @@
       href="https://unpkg.com/xterm@4.10.0/css/xterm.css"
     />
     <style type="text/css">
-      html, body {
+      html,
+      body {
         padding: 0;
         margin: 0;
         background: rgba(0, 0, 0, 0.7);
         color: rgba(192, 255, 192, 0.8);
       }
       a {
-        color: rgba(192, 255, 192, 1.0);
+        color: rgba(192, 255, 192, 1);
       }
       .game {
         display: flex;
@@ -23,10 +24,10 @@
         height: 100%;
       }
       .terminalFrame {
-        background: rgba(0, 0, 0, 1.0);
+        background: rgba(0, 0, 0, 1);
         padding: 1.25em;
         width: calc(100% - 2.5em);
-        height: calc(100% - 2.5em);        
+        height: calc(100% - 2.5em);
       }
       .terminal {
         width: 100%;
@@ -47,11 +48,16 @@
       <div class="instructions">
         <h1>Super Star Trek</h1>
         <p>
-          Converted to JavaScript in Febrary 2021 by
-          <a href="https://lmorchard.com">Les Orchard</a> &lt;me@lmorchard.com&gt;
+          <a
+            href="https://github.com/lmorchard/basic-computer-games/tree/84-js-super-star-trek/84%20Super%20Star%20Trek/javascript"
+            >Converted to JavaScript</a
+          >
+          in Febrary 2021 by
+          <a href="https://lmorchard.com">Les Orchard</a>
+          &lt;me@lmorchard.com&gt;
         </p>
-    
-      <pre>
+
+        <pre>
       INSTRUCTIONS FOR 'SUPER STAR TREK'
 
 1. WHEN YOU SEE \COMMAND ?\ PRINTED, ENTER ONE OF THE LEGAL
@@ -153,8 +159,9 @@ OF THE STARSHIP ENTERPRISE:
      OPTION 5 = GALACTIC /REGION NAME/ MAP
         THIS OPTION PRINTS THE NAMES OF THE SIXTEEN MAJOR
         GALACTIC REGIONS REFERRED TO IN THE GAME.
-    </pre>
-  </div>
+    </pre
+        >
+      </div>
     </section>
 
     <script src="https://unpkg.com/xterm@4.10.0/lib/xterm.js"></script>
@@ -174,7 +181,7 @@ OF THE STARSHIP ENTERPRISE:
         fontSize: 14,
       });
       const fitAddon = new FitAddon.FitAddon();
-      term.loadAddon(fitAddon);      
+      term.loadAddon(fitAddon);
       term.open(document.querySelector(".terminal"));
       fitAddon.fit();
       term.focus();
