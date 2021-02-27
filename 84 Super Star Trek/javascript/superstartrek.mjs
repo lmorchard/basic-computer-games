@@ -1,5 +1,5 @@
 /**
- * Super StarTrek - Feb 15, 2021
+ * SUPER STARTREK - MAY 16,1978 - REQUIRES 24K MEMORY
  *
  *        **** STAR TREK ****        ****
  * SIMULATION OF A MISSION OF THE STARSHIP ENTERPRISE,
@@ -20,6 +20,9 @@
  * MUCH AS POSSIBLE WHILE USING MULTIPLE STATEMENTS PER LINE
  * SOME LINES ARE LONGER THAN 72 CHARACTERS; THIS WAS DONE
  * BY USING "?" INSTEAD OF "PRINT" WHEN ENTERING LINES
+ *
+ * Translated and reworked into JavaScript in February 2021
+ * by Les Orchard <me@lmorchard.com>
  */
 
 export const setGameOptions = (options = {}) =>
@@ -69,12 +72,13 @@ async function gameIntro() {
   print("\n".repeat(4));
 
   print("YOUR ORDERS ARE AS FOLLOWS:");
+  print();
   print(
-    `     DESTROY THE ${gameState.enemiesRemaining} ${gameOptions.nameEnemy} WARSHIPS WHICH HAVE INVADED`
+    `  DESTROY THE ${gameState.enemiesRemaining} ${gameOptions.nameEnemy} WARSHIPS WHICH HAVE INVADED`
   );
-  print("   THE GALAXY BEFORE THEY CAN ATTACK FEDERATION HEADQUARTERS");
+  print("  THE GALAXY BEFORE THEY CAN ATTACK FEDERATION HEADQUARTERS");
   print(
-    `   ON STARDATE ${
+    `  ON STARDATE ${
       gameOptions.stardateStart + gameOptions.timeLimit
     } THIS GIVES YOU ${gameOptions.timeLimit} DAYS.  THERE${
       gameState.starbasesRemaining > 1 ? " ARE " : " IS "
@@ -85,7 +89,6 @@ async function gameIntro() {
       gameState.starbasesRemaining > 1 ? "S" : " ARE"
     } IN THE GALAXY FOR RESUPPLYING YOUR SHIP`
   );
-  print();
 }
 
 async function gameReset() {
@@ -192,8 +195,6 @@ async function gameReset() {
 }
 
 async function newQuadrantEntered() {
-  // 1310 REM HERE ANY TIME NEW QUADRANT ENTERED
-  // 1320
   gameState.sectorEnemiesCount = 0;
   gameState.sectorStarbasesCount = 0;
   gameState.sectorStarsCount = 0;
@@ -324,6 +325,7 @@ async function acceptCommand() {
     print("** FATAL ERROR **   YOU'VE JUST STRANDED YOUR SHIP IN SPACE");
     print("YOU HAVE INSUFFICIENT MANEUVERING ENERGY, AND SHIELD CONTROL");
     print("IS PRESENTLY INCAPABLE OF CROSS-CIRCUITING TO ENGINE ROOM!!");
+    print();
     gameState.gameOver = true;
     return;
   }
@@ -404,22 +406,22 @@ async function shortRangeSensorScanAndStartup() {
     `${gameOptions.nameEnemies} REMAINING ${gameState.enemiesRemaining}`,
   ];
 
-  const quadrantMapFormatted = gameState.quadrantMap
-    // Split the map into lines of 24 chars
-    .match(/.{24}/g)
-    // Split each line into cells of 3 chars
-    .map((line) => line.match(/.{3}/g))
-    // Format each line with Y coord, spaced out cells, and a line of status
-    .map(
-      (line, idx) =>
-        ` ${idx + 1}  ` + line.join(" ") + " ".repeat(8) + statusLines[idx]
-    )
-    // Finally, join all the lines with returns
-    .join("\n");
-
   print("     1   2   3   4   5   6   7   8 ");
   print("   ---------------------------------");
-  print(quadrantMapFormatted);
+  print(
+    gameState.quadrantMap
+      // Split the map into lines of 24 chars
+      .match(/.{24}/g)
+      // Split each line into cells of 3 chars
+      .map((line) => line.match(/.{3}/g))
+      // Format each line with Y coord, spaced out cells, and a line of status
+      .map(
+        (line, idx) =>
+          ` ${idx + 1}  ` + line.join(" ") + " ".repeat(4) + statusLines[idx]
+      )
+      // Finally, join all the lines with returns
+      .join("\n")
+  );
   print("   ---------------------------------");
 }
 
@@ -458,7 +460,7 @@ async function commandCourseControl() {
   );
   if (W1 == 0 || isNaN(W1)) return;
   if (gameState.systemsDamage[SYSTEM_WARP_ENGINES] < 0 && W1 > 0.2) {
-    return print("WARP ENGINES ARE DAMAGED.  MAXIUM SPEED = WARP 0.2");
+    return print("WARP ENGINES ARE DAMAGED.  MAXIMUM SPEED = WARP 0.2");
   }
   if (W1 < 0 && W1 > 8) {
     return print(
@@ -806,7 +808,8 @@ async function commandPhaserControl() {
     if (gameState.sectorEnemies[I][3] <= 0) {
       continue;
     }
-    let H = Math.floor((H1 / FND(I)) * (RND(1) + 2));
+    print();
+    let H = Math.floor((H1 / distanceFromEnemy(I)) * (RND(1) + 2));
     if (H <= 0.15 * gameState.sectorEnemies[I][3]) {
       print(
         "SENSORS SHOW NO DAMAGE TO ENEMY AT ",
@@ -823,6 +826,7 @@ async function commandPhaserControl() {
     );
     if (gameState.sectorEnemies[I][3] <= 0) {
       print(`*** ${gameOptions.nameEnemy} DESTROYED ***`);
+      print();
       gameState.sectorEnemiesCount = gameState.sectorEnemiesCount - 1;
       gameState.enemiesRemaining = gameState.enemiesRemaining - 1;
 
@@ -857,6 +861,7 @@ async function commandPhaserControl() {
         gameState.sectorEnemies[I][3],
         " UNITS REMAINING)"
       );
+      print();
     }
   }
   enemiesShoot();
@@ -907,13 +912,13 @@ async function commandPhotonTorpedo() {
     }
 
     print(`               ${X3} , ${Y3}`);
-    if (!findInQuadrantMap(QUADRANT_MAP_CELLS.empty, X, Y)) {
+    if (!findInQuadrantMap(QUADRANT_MAP_CELLS.empty, X3, Y3)) {
       break;
     }
   }
 
   // 5060
-  if (findInQuadrantMap(QUADRANT_MAP_CELLS.enemy, X, Y)) {
+  if (findInQuadrantMap(QUADRANT_MAP_CELLS.enemy, X3, Y3)) {
     print(`*** ${gameOptions.nameEnemy} DESTROYED ***`);
     gameState.sectorEnemiesCount = gameState.sectorEnemiesCount - 1;
     gameState.enemiesRemaining = gameState.enemiesRemaining - 1;
@@ -937,13 +942,13 @@ async function commandPhotonTorpedo() {
   }
 
   // 5210
-  if (findInQuadrantMap(QUADRANT_MAP_CELLS.star, X, Y)) {
+  if (findInQuadrantMap(QUADRANT_MAP_CELLS.star, X3, Y3)) {
     print(`STAR AT ${X3} , ${Y3} ABSORBED TORPEDO ENERGY.`);
     enemiesShoot();
     return;
   }
 
-  if (findInQuadrantMap(QUADRANT_MAP_CELLS.base, X, Y)) {
+  if (findInQuadrantMap(QUADRANT_MAP_CELLS.base, X3, Y3)) {
     print("*** STARBASE DESTROYED ***");
     gameState.sectorStarbasesCount = gameState.sectorStarbasesCount - 1;
     gameState.starbasesRemaining = gameState.starbasesRemaining - 1;
@@ -966,7 +971,7 @@ async function commandPhotonTorpedo() {
   }
 
   // 5430
-  insertInQuadrantMap(QUADRANT_MAP_CELLS.empty, X, Y);
+  insertInQuadrantMap(QUADRANT_MAP_CELLS.empty, X3, Y3);
   gameState.galacticMap[gameState.quadrantPositionY][
     gameState.quadrantPositionX
   ] =
@@ -996,7 +1001,7 @@ async function enemiesShoot() {
     }
 
     const H = Math.floor(
-      (gameState.sectorEnemies[I][3] / FND(I)) * (2 + RND(1))
+      (gameState.sectorEnemies[I][3] / distanceFromEnemy(I)) * (2 + RND(1))
     );
     gameState.shieldsCurrent = gameState.shieldsCurrent - H;
     gameState.sectorEnemies[I][3] = Math.floor(
@@ -1335,7 +1340,7 @@ async function endOfGame() {
     print(
       `CONGRULATION, CAPTAIN!  THEN LAST ${gameOptions.nameEnemy} BATTLE CRUISER`
     );
-    print("MENACING THE FDERATION HAS BEEN DESTROYED.");
+    print("MENACING THE FEDERATION HAS BEEN DESTROYED.");
     print();
     print(
       "YOUR EFFICIENCY RATING IS ",
@@ -1429,12 +1434,19 @@ const randomInt = (max, min = 0) =>
   Math.floor(min + Math.random() * (max - min));
 
 const RND = () => Math.random();
-const FNR = () => randomInt(8, 1); //Math.floor(Math.random() * 7.98 + 1.01);
+const FNR = () => randomInt(8, 1);
 
-const FND = (I) =>
+const distanceFromEnemy = (sectorEnemyIndex) =>
   Math.sqrt(
-    Math.pow(gameState.sectorEnemies[I][1] - gameState.sectorPositionY, 2) +
-      Math.pow(gameState.sectorEnemies[I][2] - gameState.sectorPositionX, 2)
+    Math.pow(
+      gameState.sectorEnemies[sectorEnemyIndex][1] - gameState.sectorPositionY,
+      2
+    ) +
+      Math.pow(
+        gameState.sectorEnemies[sectorEnemyIndex][2] -
+          gameState.sectorPositionX,
+        2
+      )
   );
 
 const Z$ = "                         ";
