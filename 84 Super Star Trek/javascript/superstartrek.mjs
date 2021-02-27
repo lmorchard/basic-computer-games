@@ -35,7 +35,7 @@ export const onExit = (fn) => (exit = fn);
 export async function gameMain() {
   await gameReset();
   await gameLoop();
-  exit();
+  await exit();
 }
 
 let gameState = {};
@@ -423,6 +423,7 @@ async function shortRangeSensorScanAndStartup() {
       .join("\n")
   );
   print("   ---------------------------------");
+  print();
 }
 
 function checkIfDocked() {
