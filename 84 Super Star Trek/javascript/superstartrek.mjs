@@ -58,6 +58,10 @@ const gameOptions = {
   nameWeaponsOfficer: "ENSIGN CHEKOV",
   nameCommunicationsOfficer: "LT. UHURA",
   nameChiefEngineer: "SCOTT",
+  systemDamageChanceOnHit: 0.6,
+  systemDamageHitThroughShields: 0.02,
+  systemChanceAffectedInWarp: 0.2,
+  systemChanceDamageInWarp: 0.6,
 };
 
 async function gameIntro() {
@@ -107,10 +111,10 @@ async function gameReset() {
     shieldsCurrent: 0,
     starbasesRemaining: 0,
     enemiesRemaining: 0,
-    quadrantPositionY: FNR(),
-    quadrantPositionX: FNR(),
-    sectorPositionY: FNR(),
-    sectorPositionX: FNR(),
+    quadrantPositionY: randomInt(8, 1),
+    quadrantPositionX: randomInt(8, 1),
+    sectorPositionY: randomInt(8, 1),
+    sectorPositionX: randomInt(8, 1),
     sectorEnemiesCount: 0,
     sectorStarbasesCount: 0,
     sectorStarsCount: 0,
@@ -123,23 +127,22 @@ async function gameReset() {
     gameState.systemsDamage[systemName] = 0;
   }
 
-  for (let i = 1; i <= 8; i++) {
-    gameState.galacticMap[i] = [];
-    gameState.galacticMapDiscovered[i] = [];
-    for (let j = 1; j <= 8; j++) {
-      gameState.galacticMapDiscovered[i][j] = 0;
+  for (let mapY = 1; mapY <= 8; mapY++) {
+    gameState.galacticMap[mapY] = [];
+    gameState.galacticMapDiscovered[mapY] = [];
+    for (let mapX = 1; mapX <= 8; mapX++) {
+      gameState.galacticMapDiscovered[mapY][mapX] = 0;
 
       gameState.sectorEnemiesCount = 0;
-      const R1 = Math.random();
 
-      // 850
-      if (R1 > gameOptions.enemySpawnChance[2]) {
+      const enemySpawnRoll = Math.random();
+      if (enemySpawnRoll > gameOptions.enemySpawnChance[2]) {
         gameState.sectorEnemiesCount = 3;
         gameState.enemiesRemaining = gameState.enemiesRemaining + 3;
-      } else if (R1 > gameOptions.enemySpawnChance[1]) {
+      } else if (enemySpawnRoll > gameOptions.enemySpawnChance[1]) {
         gameState.sectorEnemiesCount = 2;
         gameState.enemiesRemaining = gameState.enemiesRemaining + 2;
-      } else if (R1 > gameOptions.enemySpawnChance[0]) {
+      } else if (enemySpawnRoll > gameOptions.enemySpawnChance[0]) {
         gameState.sectorEnemiesCount = 1;
         gameState.enemiesRemaining = gameState.enemiesRemaining + 1;
       }
@@ -152,14 +155,15 @@ async function gameReset() {
       }
 
       // 1040
-      gameState.galacticMap[i][j] =
+      gameState.galacticMap[mapY][mapX] =
         gameState.sectorEnemiesCount * 100 +
         gameState.sectorStarbasesCount * 10 +
-        FNR(1);
+        randomInt(8, 1);
     }
   }
 
   if (gameState.enemiesRemaining > gameOptions.timeLimit) {
+    // Ensure the player has at least one more stardate than the number of enemies
     gameOptions.timeLimit = gameState.enemiesRemaining + 1;
   }
 
@@ -184,8 +188,8 @@ async function gameReset() {
       gameState.galacticMap[gameState.quadrantPositionY][
         gameState.quadrantPositionX
       ] + 10;
-    gameState.quadrantPositionY = FNR(1);
-    gameState.quadrantPositionX = FNR(1);
+    gameState.quadrantPositionY = randomInt(8, 1);
+    gameState.quadrantPositionX = randomInt(8, 1);
   }
 
   gameState.enemiesInitialCount = gameState.enemiesRemaining;
@@ -199,6 +203,8 @@ async function newQuadrantEntered() {
   gameState.sectorStarbasesCount = 0;
   gameState.sectorStarsCount = 0;
   gameState.starbaseRepairDelay = 0.5 * Math.random();
+
+  // Add this sector to the known map
   gameState.galacticMapDiscovered[gameState.quadrantPositionY][
     gameState.quadrantPositionX
   ] =
@@ -267,7 +273,7 @@ async function newQuadrantEntered() {
     gameState.sectorEnemies[i][3] = 0;
   }
 
-  gameState.quadrantMap = " ".repeat(3 * 8 * 8);
+  gameState.quadrantMap = " ".repeat(QUADRANT_MAP_CELLS.empty.length * 8 * 8);
 
   insertInQuadrantMap(
     QUADRANT_MAP_CELLS.hero,
@@ -284,7 +290,7 @@ async function newQuadrantEntered() {
         undefined,
         y,
         x,
-        gameOptions.enemyMaxShield * (0.5 + RND(1)),
+        gameOptions.enemyMaxShield * (0.5 + Math.random()),
       ];
     }
   }
@@ -373,7 +379,7 @@ async function commandHelp() {
 async function shortRangeSensorScanAndStartup() {
   checkIfDocked();
 
-  if (gameState.isDocked == 1) {
+  if (gameState.isDocked) {
     gameState.alertCondition = "DOCKED";
     gameState.energyRemaining = gameOptions.energyMax;
     gameState.photonTorpedoesRemaining = gameOptions.photonTorpedoesMax;
@@ -406,14 +412,20 @@ async function shortRangeSensorScanAndStartup() {
     `${gameOptions.nameEnemies} REMAINING ${gameState.enemiesRemaining}`,
   ];
 
+  const lineSplit = new RegExp(
+    `.{${QUADRANT_MAP_CELLS.empty.length * 8}}`,
+    "g"
+  );
+  const cellSplit = new RegExp(`.{${QUADRANT_MAP_CELLS.empty.length}}`, "g");
+
   print("     1   2   3   4   5   6   7   8 ");
   print("   ---------------------------------");
   print(
     gameState.quadrantMap
       // Split the map into lines of 24 chars
-      .match(/.{24}/g)
+      .match(lineSplit)
       // Split each line into cells of 3 chars
-      .map((line) => line.match(/.{3}/g))
+      .map((line) => line.match(cellSplit))
       // Format each line with Y coord, spaced out cells, and a line of status
       .map(
         (line, idx) =>
@@ -428,10 +440,10 @@ async function shortRangeSensorScanAndStartup() {
 
 function checkIfDocked() {
   const { sectorPositionY: sY, sectorPositionX: sX } = gameState;
-  for (let i = sY - 1; i <= sY + 1; i++) {
-    for (let j = sX - 1; j <= sX + 1; j++) {
-      if (i >= 1 || i <= 8 || j >= 1 || j <= 8) {
-        if (findInQuadrantMap(QUADRANT_MAP_CELLS.base, i, j)) {
+  for (let posY = sY - 1; posY <= sY + 1; posY++) {
+    for (let posX = sX - 1; posX <= sX + 1; posX++) {
+      if (posY >= 1 || posY <= 8 || posX >= 1 || posX <= 8) {
+        if (findInQuadrantMap(QUADRANT_MAP_CELLS.base, posY, posX)) {
           gameState.isDocked = true;
           return;
         }
@@ -442,37 +454,44 @@ function checkIfDocked() {
 }
 
 async function commandCourseControl() {
-  // 2290 REM COURSE CONTROL BEGINS HERE
-  let C1 = parseFloat(await input("COURSE (0-9)"));
-  if (C1 == 9) C1 = 1;
-  if (isNaN(C1) || C1 < 1 || C1 > 9) {
+  let courseInput = parseFloat(await input("COURSE (0-9)"));
+  if (courseInput == 9) courseInput = 1;
+  if (isNaN(courseInput) || courseInput < 1 || courseInput > 9) {
     print(
       `   ${gameOptions.nameNavigationOfficer} REPORTS, 'INCORRECT COURSE DATA, SIR!'`
     );
     return;
   }
 
-  const W1 = parseFloat(
+  const warpFactorInput = parseFloat(
     await input(
       `WARP FACTOR (0-${
         gameState.systemsDamage[SYSTEM_WARP_ENGINES] < 0 ? "0.2" : "8"
       })`
     )
   );
-  if (W1 == 0 || isNaN(W1)) return;
-  if (gameState.systemsDamage[SYSTEM_WARP_ENGINES] < 0 && W1 > 0.2) {
+  if (warpFactorInput == 0 || isNaN(warpFactorInput)) return;
+  if (
+    gameState.systemsDamage[SYSTEM_WARP_ENGINES] < 0 &&
+    warpFactorInput > 0.2
+  ) {
     return print("WARP ENGINES ARE DAMAGED.  MAXIMUM SPEED = WARP 0.2");
   }
-  if (W1 < 0 && W1 > 8) {
+  if (warpFactorInput < 0 && warpFactorInput > 8) {
     return print(
-      `   CHIEF ENGINEER ${gameOptions.nameChiefEngineer} REPORTS 'THE ENGINES WON'T TAKE WARP ${W1}!'`
+      `   CHIEF ENGINEER ${gameOptions.nameChiefEngineer} REPORTS 'THE ENGINES WON'T TAKE WARP ${warpFactorInput}!'`
     );
   }
 
-  const sectorsToWarp = Math.floor(W1 * 8 + 0.5);
+  const sectorsToWarp = Math.floor(warpFactorInput * 8 + 0.5);
+
   if (gameState.energyRemaining - sectorsToWarp < 0) {
     print("ENGINEERING REPORTS   'INSUFFICIENT ENERGY AVAILABLE");
-    print("                       FOR MANEUVERING AT WARP ", W1, " !'");
+    print(
+      "                       FOR MANEUVERING AT WARP ",
+      warpFactorInput,
+      " !'"
+    );
     if (
       gameState.shieldsCurrent > sectorsToWarp - gameState.energyRemaining &&
       gameState.systemsDamage[SYSTEM_SHIELD_CONTROL] > 0
@@ -486,33 +505,44 @@ async function commandCourseControl() {
     }
   }
 
-  for (let I = 1; I <= 3; I++) {
-    if (gameState.sectorEnemies[I][3] > 0) {
+  for (let enemyIdx = 1; enemyIdx <= 3; enemyIdx++) {
+    if (gameState.sectorEnemies[enemyIdx][3] > 0) {
       insertInQuadrantMap(
         QUADRANT_MAP_CELLS.empty,
-        gameState.sectorEnemies[I][1],
-        gameState.sectorEnemies[I][2]
+        gameState.sectorEnemies[enemyIdx][1],
+        gameState.sectorEnemies[enemyIdx][2]
       );
       const [R1, R2] = findSpaceInQuadrantMap();
-      gameState.sectorEnemies[I][1] = R1;
-      gameState.sectorEnemies[I][2] = R2;
+      gameState.sectorEnemies[enemyIdx][1] = R1;
+      gameState.sectorEnemies[enemyIdx][2] = R2;
       insertInQuadrantMap(
         QUADRANT_MAP_CELLS.enemy,
-        gameState.sectorEnemies[I][1],
-        gameState.sectorEnemies[I][2]
+        gameState.sectorEnemies[enemyIdx][1],
+        gameState.sectorEnemies[enemyIdx][2]
       );
     }
   }
+
   enemiesShoot();
 
-  let D1 = 0;
-  let D6 = W1;
-  if (W1 >= 1) D6 = 1;
+  let damageControlHeaderPrinted = false;
+  const printDamageReport = (msg) => {
+    if (!damageControlHeaderPrinted) {
+      damageControlHeaderPrinted = true;
+      print("DAMAGE CONTROL REPORT:");
+    }
+    print(msg);
+  };
 
+  let repairFactorDuringWarp = Math.min(1, warpFactorInput);
+
+  // Continually repair damaged systems during warp
   for (const systemName of shipSystems) {
     if (gameState.systemsDamage[systemName] >= 0) continue;
+
     gameState.systemsDamage[systemName] =
-      gameState.systemsDamage[systemName] + D6;
+      gameState.systemsDamage[systemName] + repairFactorDuringWarp;
+
     if (
       gameState.systemsDamage[systemName] > -0.1 &&
       gameState.systemsDamage[systemName] < 0
@@ -520,34 +550,27 @@ async function commandCourseControl() {
       gameState.systemsDamage[systemName] = -0.1;
       continue;
     }
+
     if (gameState.systemsDamage[systemName] < 0) continue;
-    if (D1 != 1) {
-      D1 = 1;
-      print("DAMAGE CONTROL REPORT:");
-    }
-    print(`        ${systemName} REPAIR COMPLETED.`);
+
+    printDamageReport(`        ${systemName} REPAIR COMPLETED.`);
   }
 
-  // 20% chance of system being damaged or repaired in warp
-  if (RND() < 0.2) {
+  // 20% chance of a random system being damaged, repaired, or improved in warp
+  if (Math.random() < gameOptions.systemChanceAffectedInWarp) {
     const systemIdx = randomInt(shipSystems.length);
     const systemName = shipSystems[systemIdx];
-    if (RND(1) < 0.6) {
+
+    if (Math.random() < gameOptions.systemChanceDamageInWarp) {
+      // 60% chance of random system damage
       gameState.systemsDamage[systemName] =
-        gameState.systemsDamage[systemName] - (RND(1) * 5 + 1);
-      if (D1 != 1) {
-        D1 = 1;
-        print("DAMAGE CONTROL REPORT:");
-      }
-      print(`        ${systemName} DAMAGED`);
+        gameState.systemsDamage[systemName] - (Math.random() * 5 + 1);
+      printDamageReport(`        ${systemName} DAMAGED`);
     } else {
+      // 40% chance of random system repair or improvement
       gameState.systemsDamage[systemName] =
-        gameState.systemsDamage[systemName] + RND(1) * 3 + 1;
-      if (D1 != 1) {
-        D1 = 1;
-        print("DAMAGE CONTROL REPORT:");
-      }
-      print(`        ${systemName} STATE OF REPAIR IMPROVED`);
+        gameState.systemsDamage[systemName] + Math.random() * 3 + 1;
+      printDamageReport(`        ${systemName} STATE OF REPAIR IMPROVED`);
     }
     print();
   }
@@ -559,15 +582,15 @@ async function commandCourseControl() {
     Math.floor(gameState.sectorPositionX)
   );
 
-  const [X1, X2] = courseToXY(C1);
-  let X = gameState.sectorPositionY;
-  let Y = gameState.sectorPositionX;
-  let Q4 = gameState.quadrantPositionY;
-  let Q5 = gameState.quadrantPositionX;
+  const [courseDeltaY, courseDeltaX] = courseToDeltaXY(courseInput);
+  let currentSectorPositionY = gameState.sectorPositionY;
+  let currentSectorPositionX = gameState.sectorPositionX;
+  let currentQuadrantPosY = gameState.quadrantPositionY;
+  let currentQuadrantPosX = gameState.quadrantPositionX;
 
-  for (let I = 1; I < sectorsToWarp; I++) {
-    gameState.sectorPositionY = gameState.sectorPositionY + X1;
-    gameState.sectorPositionX = gameState.sectorPositionX + X2;
+  for (let sectorsWarped = 1; sectorsWarped < sectorsToWarp; sectorsWarped++) {
+    gameState.sectorPositionY = gameState.sectorPositionY + courseDeltaY;
+    gameState.sectorPositionX = gameState.sectorPositionX + courseDeltaX;
 
     if (
       gameState.sectorPositionY < 1 ||
@@ -576,17 +599,24 @@ async function commandCourseControl() {
       gameState.sectorPositionX >= 9
     ) {
       // 3490 REM EXCEEDED QUADRANT LIMITS
-      X = 8 * gameState.quadrantPositionY + X + sectorsToWarp * X1;
-      Y = 8 * gameState.quadrantPositionX + Y + sectorsToWarp * X2;
+      currentSectorPositionY =
+        8 * gameState.quadrantPositionY +
+        currentSectorPositionY +
+        sectorsToWarp * courseDeltaY;
 
-      gameState.quadrantPositionY = Math.floor(X / 8);
-      gameState.quadrantPositionX = Math.floor(Y / 8);
+      currentSectorPositionX =
+        8 * gameState.quadrantPositionX +
+        currentSectorPositionX +
+        sectorsToWarp * courseDeltaX;
+
+      gameState.quadrantPositionY = Math.floor(currentSectorPositionY / 8);
+      gameState.quadrantPositionX = Math.floor(currentSectorPositionX / 8);
 
       gameState.sectorPositionY = Math.floor(
-        X - gameState.quadrantPositionY * 8
+        currentSectorPositionY - gameState.quadrantPositionY * 8
       );
       gameState.sectorPositionX = Math.floor(
-        Y - gameState.quadrantPositionX * 8
+        currentSectorPositionX - gameState.quadrantPositionX * 8
       );
 
       if (gameState.sectorPositionY == 0) {
@@ -598,29 +628,29 @@ async function commandCourseControl() {
         gameState.sectorPositionX = 8;
       }
 
-      let X5 = 0;
+      let galacticPerimeterHit = false;
       if (gameState.quadrantPositionY < 1) {
-        X5 = 1;
+        galacticPerimeterHit = true;
         gameState.quadrantPositionY = 1;
         gameState.sectorPositionY = 1;
       }
       if (gameState.quadrantPositionY > 8) {
-        X5 = 1;
+        galacticPerimeterHit = true;
         gameState.quadrantPositionY = 8;
         gameState.sectorPositionY = 8;
       }
       if (gameState.quadrantPositionX < 1) {
-        X5 = 1;
+        galacticPerimeterHit = true;
         gameState.quadrantPositionX = 1;
         gameState.sectorPositionX = 1;
       }
       if (gameState.quadrantPositionX > 8) {
-        X5 = 1;
+        galacticPerimeterHit = true;
         gameState.quadrantPositionX = 8;
         gameState.sectorPositionX = 8;
       }
 
-      if (X5 != 0) {
+      if (galacticPerimeterHit) {
         print(
           `${gameOptions.nameCommunicationsOfficer} REPORTS MESSAGE FROM STARFLEET COMMAND:`
         );
@@ -633,36 +663,37 @@ async function commandCourseControl() {
           `  AT SECTOR ${gameState.sectorPositionY} , ${gameState.sectorPositionX} OF QUADRANT ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX}.'`
         );
 
-        if (
-          gameState.stardateCurrent >
-          gameOptions.stardateStart + gameOptions.timeLimit
-        ) {
-          gameState.gameOver = true;
+        if (checkIfTimeExpired()) {
           return;
         }
       }
 
       if (
         8 * gameState.quadrantPositionY + gameState.quadrantPositionX ==
-        8 * Q4 + Q5
+        8 * currentQuadrantPosY + currentQuadrantPosX
       ) {
         break;
       }
 
       gameState.stardateCurrent = gameState.stardateCurrent + 1;
-      maneuverEnergy(sectorsToWarp);
+      consumeEnergyForWarp(sectorsToWarp);
       return newQuadrantEntered();
     }
 
-    // 3240
-    const S8 =
-      Math.floor(gameState.sectorPositionY) * 24 +
-      Math.floor(gameState.sectorPositionX) * 3 -
-      26;
-    if (gameState.quadrantMap.substring(S8, S8 + 2) != "  ") {
-      gameState.sectorPositionY = Math.floor(gameState.sectorPositionY - X1);
-      gameState.sectorPositionX = Math.floor(gameState.sectorPositionX - X2);
-
+    if (
+      !findInQuadrantMap(
+        QUADRANT_MAP_CELLS.empty,
+        gameState.sectorPositionY,
+        gameState.sectorPositionX
+      )
+    ) {
+      // Undo this step of warp travel if the space isn't empty
+      gameState.sectorPositionY = Math.floor(
+        gameState.sectorPositionY - courseDeltaY
+      );
+      gameState.sectorPositionX = Math.floor(
+        gameState.sectorPositionX - courseDeltaX
+      );
       print(
         `WARP ENGINES SHUT DOWN AT SECTOR ${gameState.sectorPositionY} , ${gameState.sectorPositionX} DUE TO BAD NAVAGATION`
       );
@@ -679,31 +710,38 @@ async function commandCourseControl() {
     Math.floor(gameState.sectorPositionX)
   );
 
-  maneuverEnergy(sectorsToWarp);
+  consumeEnergyForWarp(sectorsToWarp);
 
-  let T8 = 1;
-  if (W1 < 1) {
-    T8 = 0.1 * Math.floor(10 * W1);
+  let timeElapsedDuringWarp = 1;
+  if (warpFactorInput < 1) {
+    timeElapsedDuringWarp = 0.1 * Math.floor(10 * warpFactorInput);
   }
 
-  gameState.stardateCurrent = gameState.stardateCurrent + T8;
-  if (
-    gameState.stardateCurrent >
-    gameOptions.stardateStart + gameOptions.timeLimit
-  ) {
-    gameState.gameOver = true;
+  gameState.stardateCurrent = gameState.stardateCurrent + timeElapsedDuringWarp;
+  if (checkIfTimeExpired()) {
     return;
   }
 
   await shortRangeSensorScanAndStartup();
 }
 
-function maneuverEnergy(sectorsToWarp) {
+function checkIfTimeExpired() {
+  if (
+    gameState.stardateCurrent >
+    gameOptions.stardateStart + gameOptions.timeLimit
+  ) {
+    gameState.gameOver = true;
+  }
+  return gameState.gameOver;
+}
+
+function consumeEnergyForWarp(sectorsToWarp) {
   // 3900 REM MANEUVER ENERGY S/R **
   gameState.energyRemaining = gameState.energyRemaining - sectorsToWarp - 10;
   if (gameState.energyRemaining >= 0) {
     return;
   }
+
   print("SHIELD CONTROL SUPPLIES ENERGY TO COMPLETE THE MANEUVER.");
   gameState.shieldsCurrent =
     gameState.shieldsCurrent + gameState.energyRemaining;
@@ -719,45 +757,51 @@ async function commandLongRangeScan() {
     print("LONG RANGE SENSORS ARE INOPERABLE");
     return;
   }
+
   print(
     "LONG RANGE SCAN FOR QUADRANT ",
     gameState.quadrantPositionY,
     " , ",
     gameState.quadrantPositionX
   );
-  const N = [];
-  const O1$ = "-------------------";
-  print(O1$);
+
+  const separatorLine = "-------------------";
+  print(separatorLine);
+
   for (
-    let I = gameState.quadrantPositionY - 1;
-    I <= gameState.quadrantPositionY + 1;
-    I++
+    let posY = gameState.quadrantPositionY - 1;
+    posY <= gameState.quadrantPositionY + 1;
+    posY++
   ) {
-    let out = "";
-    N[1] = -1;
-    N[2] = -2;
-    N[3] = -3;
+    // Scan a line of sectors
+    const lineSectors = [null, null, null];
     for (
-      let J = gameState.quadrantPositionX - 1;
-      J <= gameState.quadrantPositionX + 1;
-      J++
+      let posX = gameState.quadrantPositionX - 1;
+      posX <= gameState.quadrantPositionX + 1;
+      posX++
     ) {
-      if (I > 0 && I < 9 && J > 0 && J < 9) {
-        N[J - gameState.quadrantPositionX + 2] = gameState.galacticMap[I][J];
-        gameState.galacticMapDiscovered[I][J] = gameState.galacticMap[I][J];
+      if (posY > 0 && posY < 9 && posX > 0 && posX < 9) {
+        // Add the scanned cell to the current scan output
+        lineSectors[posX - gameState.quadrantPositionX + 1] =
+          gameState.galacticMap[posY][posX];
+        // Add the scanned cell to the discovered map
+        gameState.galacticMapDiscovered[posY][posX] =
+          gameState.galacticMap[posY][posX];
       }
     }
-    for (let L = 1; L <= 3; L++) {
-      out = out + ": ";
-      if (N[L] < 0) {
-        out += "*** ";
-      } else {
-        out += ("" + N[L]).padStart(3, "0") + " ";
-      }
-    }
-    out += ":";
-    print(out);
-    print(O1$);
+
+    // Print a formatted line of the scan - e.g. ": 004 : 205 : 004 :"
+    print(
+      ": " +
+        lineSectors
+          .map((sector) =>
+            sector === null ? "***" : sector.toString().padStart(3, "0")
+          )
+          .join(" : ") +
+        " :"
+    );
+
+    print(separatorLine);
   }
 }
 
@@ -785,65 +829,82 @@ async function commandPhaserControl() {
     gameState.energyRemaining,
     " UNITS"
   );
-  let X;
+  let phaserUnitsToFire;
   const continueCommandLoop = true;
   while (continueCommandLoop) {
-    X = parseFloat(await input("NUMBER OF UNITS TO FIRE"));
-    if (X <= 0) return;
-    if (gameState.energyRemaining - X >= 0) {
+    phaserUnitsToFire = parseFloat(await input("NUMBER OF UNITS TO FIRE"));
+    if (phaserUnitsToFire <= 0) return;
+    if (gameState.energyRemaining - phaserUnitsToFire >= 0) {
       break;
     }
-    print("ENERGY AVAILABLE = ", gameState.energyRemaining, " UNITS");
+    print(`ENERGY AVAILABLE = ${gameState.energyRemaining} UNITS`);
   }
 
-  gameState.energyRemaining = gameState.energyRemaining - X;
+  gameState.energyRemaining = gameState.energyRemaining - phaserUnitsToFire;
 
-  // TODO: is this a bug? D[8] is computer, D[7] is shields - but D[7] is what was in the original source!
-  if (gameState.systemsDamage[SYSTEM_SHIELD_CONTROL] < 0) {
-    X = X * Math.random();
+  // FIXED: in the original, this was shield system. Changed to phaser system.
+  if (gameState.systemsDamage[SYSTEM_PHASER_CONTROL] < 0) {
+    phaserUnitsToFire = phaserUnitsToFire * Math.random();
   }
 
-  let H1 = Math.floor(X / gameState.sectorEnemiesCount);
-
-  for (let I = 1; I <= 3; I++) {
-    if (gameState.sectorEnemies[I][3] <= 0) {
+  // Spread phaser fire between all enemies
+  let phaserUnitsPerEnemy = Math.floor(
+    phaserUnitsToFire / gameState.sectorEnemiesCount
+  );
+  for (let enemyIdx = 1; enemyIdx <= 3; enemyIdx++) {
+    if (gameState.sectorEnemies[enemyIdx][3] <= 0) {
+      // Skip dead enemies
       continue;
     }
     print();
-    let H = Math.floor((H1 / distanceFromEnemy(I)) * (RND(1) + 2));
-    if (H <= 0.15 * gameState.sectorEnemies[I][3]) {
+
+    // Phaser damage falls off based on distance and a bit of chance
+    let phaserDamage = Math.floor(
+      (phaserUnitsPerEnemy / distanceFromEnemy(enemyIdx)) * (Math.random() + 2)
+    );
+    if (phaserDamage <= 0.15 * gameState.sectorEnemies[enemyIdx][3]) {
       print(
         "SENSORS SHOW NO DAMAGE TO ENEMY AT ",
-        gameState.sectorEnemies[I][1],
+        gameState.sectorEnemies[enemyIdx][1],
         " , ",
-        gameState.sectorEnemies[I][2]
+        gameState.sectorEnemies[enemyIdx][2]
       );
       continue;
     }
-    gameState.sectorEnemies[I][3] = gameState.sectorEnemies[I][3] - H;
+    gameState.sectorEnemies[enemyIdx][3] =
+      gameState.sectorEnemies[enemyIdx][3] - phaserDamage;
 
     print(
-      `${H} UNIT HIT ON ${gameOptions.nameEnemy} AT SECTOR ${gameState.sectorEnemies[I][1]} , ${gameState.sectorEnemies[I][2]}`
+      `${phaserDamage} UNIT HIT ON ${gameOptions.nameEnemy} AT SECTOR ${gameState.sectorEnemies[enemyIdx][1]} , ${gameState.sectorEnemies[enemyIdx][2]}`
     );
-    if (gameState.sectorEnemies[I][3] <= 0) {
+
+    if (gameState.sectorEnemies[enemyIdx][3] > 0) {
+      print(
+        `   (SENSORS SHOW ${gameState.sectorEnemies[enemyIdx][3]} UNITS REMAINING)`
+      );
+      print();
+    } else {
       print(`*** ${gameOptions.nameEnemy} DESTROYED ***`);
       print();
       gameState.sectorEnemiesCount = gameState.sectorEnemiesCount - 1;
       gameState.enemiesRemaining = gameState.enemiesRemaining - 1;
 
+      // Remove enemy from display
       insertInQuadrantMap(
         QUADRANT_MAP_CELLS.empty,
-        gameState.sectorEnemies[I][1],
-        gameState.sectorEnemies[I][2]
+        gameState.sectorEnemies[enemyIdx][1],
+        gameState.sectorEnemies[enemyIdx][2]
       );
 
-      gameState.sectorEnemies[I][3] = 0;
+      // Set enemy health at exactly zero
+      gameState.sectorEnemies[enemyIdx][3] = 0;
+
+      // Update the galactic map with one fewer enemy
       gameState.galacticMap[gameState.quadrantPositionY][
         gameState.quadrantPositionX
-      ] =
-        gameState.galacticMap[gameState.quadrantPositionY][
-          gameState.quadrantPositionX
-        ] - 100;
+      ] -= 100;
+
+      // Copy updated galactic map sector to discovered map.
       gameState.galacticMapDiscovered[gameState.quadrantPositionY][
         gameState.quadrantPositionX
       ] =
@@ -852,19 +913,14 @@ async function commandPhaserControl() {
         ];
 
       if (gameState.enemiesRemaining <= 0) {
+        // If that was the last enemy, we've won!
         gameState.gameOver = true;
         gameState.gameWon = true;
         return;
       }
-    } else {
-      print(
-        "   (SENSORS SHOW ",
-        gameState.sectorEnemies[I][3],
-        " UNITS REMAINING)"
-      );
-      print();
     }
   }
+
   enemiesShoot();
 }
 
@@ -878,78 +934,97 @@ async function commandPhotonTorpedo() {
     return print("PHOTON TUBES ARE NOT OPERATIONAL");
   }
 
-  let C1 = parseFloat(await input("PHOTON TORPEDO COURSE (1-9)"));
-  if (C1 == 9) C1 = 1;
+  let torpedoCourse = parseFloat(await input("PHOTON TORPEDO COURSE (1-9)"));
+  if (torpedoCourse == 9) torpedoCourse = 1;
 
-  if (C1 < 1 || C1 > 9) {
+  if (torpedoCourse < 1 || torpedoCourse > 9) {
     print(
       `${gameOptions.nameWeaponsOfficer} REPORTS,  'INCORRECT COURSE DATA, SIR!'`
     );
   }
 
-  const [X1, X2] = courseToXY(C1);
-  let X3, Y3;
+  const [courseDeltaY, courseDeltaX] = courseToDeltaXY(torpedoCourse);
 
   gameState.energyRemaining = gameState.energyRemaining - 2;
   gameState.photonTorpedoesRemaining = gameState.photonTorpedoesRemaining - 1;
-  let X = gameState.sectorPositionY;
-  let Y = gameState.sectorPositionX;
+  let currPosY = gameState.sectorPositionY;
+  let currPosX = gameState.sectorPositionX;
 
   print("TORPEDO TRACK:");
 
+  // Fly the torpedo along its course...
+  let quantizedPosY, quantizedPosX;
   const forever = true;
   while (forever) {
-    // 4920
-    X = X + X1;
-    Y = Y + X2;
-    X3 = Math.floor(X + 0.5);
-    Y3 = Math.floor(Y + 0.5);
+    currPosY = currPosY + courseDeltaY;
+    currPosX = currPosX + courseDeltaX;
 
-    if (X3 < 1 || X3 > 8 || Y3 < 1 || Y3 > 8) {
-      // 5490
+    // The course will move in decimals, quantize to whole numbers
+    quantizedPosY = Math.floor(currPosY + 0.5);
+    quantizedPosX = Math.floor(currPosX + 0.5);
+
+    // Exiting the sector means the torpedo missed
+    if (
+      quantizedPosY < 1 ||
+      quantizedPosY > 8 ||
+      quantizedPosX < 1 ||
+      quantizedPosX > 8
+    ) {
       print("TORPEDO MISSED");
-      enemiesShoot();
-      return;
+      return enemiesShoot();
     }
 
-    print(`               ${X3} , ${Y3}`);
-    if (!findInQuadrantMap(QUADRANT_MAP_CELLS.empty, X3, Y3)) {
+    print(`               ${quantizedPosY} , ${quantizedPosX}`);
+
+    if (
+      !findInQuadrantMap(QUADRANT_MAP_CELLS.empty, quantizedPosY, quantizedPosX)
+    ) {
+      // Torpedo hit something solid, so stop flying.
       break;
     }
   }
 
-  // 5060
-  if (findInQuadrantMap(QUADRANT_MAP_CELLS.enemy, X3, Y3)) {
+  // Did the torpedo hit an enemy?
+  if (
+    findInQuadrantMap(QUADRANT_MAP_CELLS.enemy, quantizedPosY, quantizedPosX)
+  ) {
     print(`*** ${gameOptions.nameEnemy} DESTROYED ***`);
     gameState.sectorEnemiesCount = gameState.sectorEnemiesCount - 1;
     gameState.enemiesRemaining = gameState.enemiesRemaining - 1;
 
     if (gameState.enemiesRemaining <= 0) {
+      // If that was the last enemy, then we've won!
       gameState.gameOver = true;
       gameState.gameWon = true;
       return;
     }
 
-    // 5150
-    for (let I = 1; I <= 3; I++) {
+    // Find which enemy was hit and set health to zero
+    for (let enemyIdx = 1; enemyIdx <= 3; enemyIdx++) {
       if (
-        X3 == gameState.sectorEnemies[I][1] &&
-        Y3 == gameState.sectorEnemies[I][2]
+        quantizedPosY == gameState.sectorEnemies[enemyIdx][1] &&
+        quantizedPosX == gameState.sectorEnemies[enemyIdx][2]
       ) {
-        gameState.sectorEnemies[I][3] = 0;
+        gameState.sectorEnemies[enemyIdx][3] = 0;
         break;
       }
     }
   }
 
-  // 5210
-  if (findInQuadrantMap(QUADRANT_MAP_CELLS.star, X3, Y3)) {
-    print(`STAR AT ${X3} , ${Y3} ABSORBED TORPEDO ENERGY.`);
-    enemiesShoot();
-    return;
+  // Did the torpedo hit a star?
+  if (
+    findInQuadrantMap(QUADRANT_MAP_CELLS.star, quantizedPosY, quantizedPosX)
+  ) {
+    print(
+      `STAR AT ${quantizedPosY} , ${quantizedPosX} ABSORBED TORPEDO ENERGY.`
+    );
+    return enemiesShoot();
   }
 
-  if (findInQuadrantMap(QUADRANT_MAP_CELLS.base, X3, Y3)) {
+  // Did the torpedo hit a starbase?
+  if (
+    findInQuadrantMap(QUADRANT_MAP_CELLS.base, quantizedPosY, quantizedPosX)
+  ) {
     print("*** STARBASE DESTROYED ***");
     gameState.sectorStarbasesCount = gameState.sectorStarbasesCount - 1;
     gameState.starbasesRemaining = gameState.starbasesRemaining - 1;
@@ -967,12 +1042,13 @@ async function commandPhotonTorpedo() {
     } else {
       print("STARFLEET COMMAND REVIEWING YOUR RECORD TO CONSIDER");
       print("COURT MARTIAL!");
-      gameState.isDocked = 0;
+      gameState.isDocked = false;
     }
   }
 
-  // 5430
-  insertInQuadrantMap(QUADRANT_MAP_CELLS.empty, X3, Y3);
+  // If we hit an enemy or a starbase, update the sector and galaxy map to
+  // remove the thing destroyed
+  insertInQuadrantMap(QUADRANT_MAP_CELLS.empty, quantizedPosY, quantizedPosX);
   gameState.galacticMap[gameState.quadrantPositionY][
     gameState.quadrantPositionX
   ] =
@@ -985,58 +1061,70 @@ async function commandPhotonTorpedo() {
     gameState.galacticMap[gameState.quadrantPositionY][
       gameState.quadrantPositionX
     ];
-  enemiesShoot();
+
+  return enemiesShoot();
 }
 
 async function enemiesShoot() {
   if (gameState.sectorEnemiesCount <= 0) {
     return;
   }
+
   if (gameState.isDocked) {
     print("STARBASE SHIELDS PROTECT THE ENTERPRISE");
     return;
   }
-  for (let I = 1; I <= 3; I++) {
-    if (gameState.sectorEnemies[I][3] <= 0) {
+
+  for (let enemyIdx = 1; enemyIdx <= 3; enemyIdx++) {
+    if (gameState.sectorEnemies[enemyIdx][3] <= 0) {
       continue;
     }
 
-    const H = Math.floor(
-      (gameState.sectorEnemies[I][3] / distanceFromEnemy(I)) * (2 + RND(1))
+    // Enemy damage based on health with drop-off for distance and chance
+    const enemyWeaponDamage = Math.floor(
+      (gameState.sectorEnemies[enemyIdx][3] / distanceFromEnemy(enemyIdx)) *
+        (2 + Math.random())
     );
-    gameState.shieldsCurrent = gameState.shieldsCurrent - H;
-    gameState.sectorEnemies[I][3] = Math.floor(
-      gameState.sectorEnemies[I][3] / (3 + RND(0))
+    gameState.shieldsCurrent = gameState.shieldsCurrent - enemyWeaponDamage;
+
+    // Consume enemy health for firing weapon
+    gameState.sectorEnemies[enemyIdx][3] = Math.floor(
+      gameState.sectorEnemies[enemyIdx][3] / (3 + Math.random())
     );
 
     print(
-      H,
-      " UNIT HIT ON ENTERPRISE FROM SECTOR ",
-      gameState.sectorEnemies[I][1],
-      " , ",
-      gameState.sectorEnemies[I][2]
+      `${enemyWeaponDamage} UNIT HIT ON ENTERPRISE FROM SECTOR ${gameState.sectorEnemies[enemyIdx][1]} , ${gameState.sectorEnemies[enemyIdx][2]}`
     );
 
     if (gameState.shieldsCurrent <= 0) {
+      // If we're out of shields, we're out of luck
       gameState.gameOver = true;
       gameState.destroyed = true;
       return;
     }
 
-    print("      <SHIELDS DOWN TO ", gameState.shieldsCurrent, " UNITS>");
-    if (H < 20) {
-      continue;
-    }
-    if (RND(1) > 0.6 || H / gameState.shieldsCurrent <= 0.02) {
+    print(`      <SHIELDS DOWN TO ${gameState.shieldsCurrent} UNITS>`);
+    if (enemyWeaponDamage < 20) {
       continue;
     }
 
+    // Systems damage with 60% chance or a hit of more than 2% of shields
+    if (
+      Math.random() > gameOptions.systemDamageChanceOnHit ||
+      enemyWeaponDamage / gameState.shieldsCurrent <=
+        gameOptions.systemDamageHitThroughShields
+    ) {
+      continue;
+    }
+
+    // Random system damaged proportional to enemy damage and current shields
     const systemIdx = randomInt(shipSystems.length);
     const systemName = shipSystems[systemIdx];
     gameState.systemsDamage[systemName] =
       gameState.systemsDamage[systemName] -
-      H / gameState.shieldsCurrent -
-      0.5 * RND(1);
+      enemyWeaponDamage / gameState.shieldsCurrent -
+      0.5 * Math.random();
+
     print(`DAMAGE CONTROL REPORTS ${systemName} DAMAGED BY THE HIT`);
   }
 }
@@ -1052,32 +1140,33 @@ async function commandShieldControl() {
     "ENERGY AVAILABLE = ",
     gameState.energyRemaining + gameState.shieldsCurrent
   );
-  const X = parseFloat(await input("NUMBER OF UNITS TO SHIELDS"));
-  if (X < 0 || gameState.shieldsCurrent == X) {
+  const shieldUnits = parseFloat(await input("NUMBER OF UNITS TO SHIELDS"));
+  if (shieldUnits < 0 || gameState.shieldsCurrent == shieldUnits) {
     print("<SHIELDS UNCHANGED>");
     return;
   }
-  if (X > gameState.energyRemaining + gameState.shieldsCurrent) {
+  if (shieldUnits > gameState.energyRemaining + gameState.shieldsCurrent) {
     print("SHIELD CONTROL REPORTS  'THIS IS NOT THE FEDERATION TREASURY.'");
     print("<SHIELDS UNCHANGED>");
     return;
   }
 
   gameState.energyRemaining =
-    gameState.energyRemaining + gameState.shieldsCurrent - X;
-  gameState.shieldsCurrent = X;
+    gameState.energyRemaining + gameState.shieldsCurrent - shieldUnits;
+  gameState.shieldsCurrent = shieldUnits;
 
   print("DEFLECTOR CONTROL ROOM REPORT:");
   print(
-    "  'SHIELDS NOW AT ",
-    Math.floor(gameState.shieldsCurrent),
-    " UNITS PER YOUR COMMAND.'"
+    `  'SHIELDS NOW AT ${Math.floor(
+      gameState.shieldsCurrent
+    )} UNITS PER YOUR COMMAND.`
   );
 }
 
 async function commandDamageControl() {
   // 5680 REM DAMAGE CONTROL
   // 5690
+  // FIXME: Seems like damage control should work while docked?
   if (gameState.systemsDamage[SYSTEM_DAMAGE_CONTROL] < 0) {
     print("DAMAGE CONTROL REPORT NOT AVAILABLE");
     return;
@@ -1088,14 +1177,13 @@ async function commandDamageControl() {
   print("DEVICE             STATE OF REPAIR");
   for (const systemName of shipSystems) {
     print(
-      systemName,
-      Z$.substring(0, 25 - systemName.length),
+      systemName.padEnd(25, " "),
       Math.floor(gameState.systemsDamage[systemName] * 100) * 0.01
     );
   }
   print();
 
-  if (gameState.isDocked != 0) {
+  if (gameState.isDocked) {
     let repairTimeEstimate = 0;
     for (const systemName of shipSystems) {
       if (gameState.systemsDamage[systemName] < 0) {
@@ -1112,12 +1200,14 @@ async function commandDamageControl() {
     }
     print("TECHNICIANS STANDING BY TO EFFECT REPAIRS TO YOUR SHIP;");
     print(
-      "ESTIMATED TIME TO REPAIR: ",
-      0.01 * Math.floor(100 * repairTimeEstimate),
-      " STARDATES"
+      `ESTIMATED TIME TO REPAIR: ${
+        0.01 * Math.floor(100 * repairTimeEstimate)
+      } STARDATES`
     );
-    const A$ = await input("WILL YOU AUTHORIZE THE REPAIR ORDER (Y/N)");
-    if (A$.toUpperCase() != "Y") {
+    const authorizeRepairInput = await input(
+      "WILL YOU AUTHORIZE THE REPAIR ORDER (Y/N)"
+    );
+    if (authorizeRepairInput.toUpperCase() != "Y") {
       return;
     }
     for (const systemName of shipSystems) {
@@ -1135,11 +1225,11 @@ async function commandLibraryComputer() {
     print("COMPUTER DISABLED");
     return;
   }
-  const commandIdx = parseInt(
+  const commandInput = parseInt(
     await input("COMPUTER ACTIVE AND AWAITING COMMAND")
   );
-  if (commandIdx < 0) return;
-  const command = COMMANDS_COMPUTER[commandIdx] || computerHelp;
+  if (commandInput < 0) return;
+  const command = COMMANDS_COMPUTER[commandInput] || computerHelp;
   print();
   await command();
 }
@@ -1162,11 +1252,9 @@ async function computerHelp() {
   print("   4 = DIRECTION/DISTANCE CALCULATOR");
   print("   5 = GALAXY 'REGION NAME' MAP");
   print();
-  // :GOTO7320
 }
 
 async function computerPhotonData() {
-  // 8070
   if (gameState.sectorEnemiesCount <= 0) {
     print(
       `SCIENCE OFFICER ${gameOptions.nameScienceOfficer} REPORTS  'SENSORS SHOW NO ENEMY SHIPS`
@@ -1174,26 +1262,25 @@ async function computerPhotonData() {
     print("                                IN THIS QUADRANT'");
     return;
   }
-  // 8080
+
   print(
     `FROM ENTERPRISE TO ${gameOptions.nameEnemy} BATTLE CRUISER${
       gameState.sectorEnemiesCount > 1 ? "S" : ""
     }`
   );
 
-  for (let I = 1; I <= 3; I++) {
-    if (gameState.sectorEnemies[I][3] <= 0) continue;
+  for (let enemyIdx = 1; enemyIdx <= 3; enemyIdx++) {
+    if (gameState.sectorEnemies[enemyIdx][3] <= 0) continue;
     computerDirectionCommon({
       fromY: gameState.sectorPositionY,
       fromX: gameState.sectorPositionX,
-      toY: gameState.sectorEnemies[I][1],
-      toX: gameState.sectorEnemies[I][2],
+      toY: gameState.sectorEnemies[enemyIdx][1],
+      toX: gameState.sectorEnemies[enemyIdx][2],
     });
   }
 }
 
 async function computerStarbaseData() {
-  // 8500
   if (gameState.sectorStarbasesCount == 0) {
     print(
       `MR. ${gameOptions.nameScienceOfficer} REPORTS,  'SENSORS SHOW NO STARBASES IN THIS QUADRANT.'`
@@ -1209,7 +1296,7 @@ async function computerStarbaseData() {
   });
 }
 
-const parseCoords = async (prompt) =>
+const inputCoords = async (prompt) =>
   (await input(prompt)).split(",").map((s) => parseInt(s.trim()));
 
 async function computerDirectionData() {
@@ -1218,8 +1305,8 @@ async function computerDirectionData() {
     `YOU ARE AT QUADRANT ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX} SECTOR ${gameState.sectorPositionY} , ${gameState.sectorPositionX}`
   );
   print("PLEASE ENTER");
-  const [fromY, fromX] = await parseCoords("  INITIAL COORDINATES (Y,X)");
-  const [toY, toX] = await parseCoords("  FINAL COORDINATES (Y,X)");
+  const [fromY, fromX] = await inputCoords("  INITIAL COORDINATES (Y,X)");
+  const [toY, toX] = await inputCoords("  FINAL COORDINATES (Y,X)");
   computerDirectionCommon({ fromX, fromY, toX, toY });
 }
 
@@ -1233,8 +1320,8 @@ async function computerDirectionCommon({ fromX, fromY, toX, toY }) {
       ((Math.atan2(0 - fromY - (0 - toY), fromX - toX) + Math.PI) %
         (Math.PI * 2));
 
-  print(`DISTANCE = ${distance}`);
   print(`DIRECTION = ${direction}`);
+  print(`DISTANCE = ${distance}`);
 }
 
 async function computerStatusReport() {
@@ -1272,52 +1359,49 @@ async function computerStatusReport() {
 }
 
 async function computerGalaxyMap() {
-  // 7390 REM SETUP TO CHANGE CUM GAL RECORD TO GALAXY MAP
-  // 7400
   print("                        THE GALAXY");
-  computerCommonMap(0, 1);
+  computerCommonMap(false);
 }
 
 async function computerCumulativeRecord() {
-  // 7530 REM CUM GALACTIC RECORD
-  // 7540 REM INPUT"DO YOU WANT A HARDCOPY? IS THE TTY ON (Y/N)";A$
-  // 7542 REM IFA$="Y"THENPOKE1229,2:POKE1237,3:NULL1
   print();
-  print("        ");
   print(
-    `COMPUTER RECORD OF GALAXY FOR QUADRANT ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX}`
+    `        COMPUTER RECORD OF GALAXY FOR QUADRANT ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX}`
   );
   print();
-  computerCommonMap(1, 0);
+  computerCommonMap();
 }
 
-async function computerCommonMap(H8, G5) {
-  // 7550
+async function computerCommonMap(showMapCells = true) {
   print("       1     2     3     4     5     6     7     8");
-  const O1$ = "     ----- ----- ----- ----- ----- ----- ----- -----";
-  print(O1$);
-  for (let I = 1; I <= 8; I++) {
-    let out = `  ${I}`;
-    if (H8 == 1) {
+  const separator = "     ----- ----- ----- ----- ----- ----- ----- -----";
+  print(separator);
+  for (let mapY = 1; mapY <= 8; mapY++) {
+    let out = `  ${mapY}`;
+    if (showMapCells == 1) {
       // 7630
-      for (let J = 1; J <= 8; J++) {
+      for (let mapX = 1; mapX <= 8; mapX++) {
         out += `   ${
-          gameState.galacticMapDiscovered[I][J] == 0
+          gameState.galacticMapDiscovered[mapY][mapX] == 0
             ? "***"
-            : ("" + gameState.galacticMapDiscovered[I][J]).padStart(3, "0")
+            : ("" + gameState.galacticMapDiscovered[mapY][mapX]).padStart(
+                3,
+                "0"
+              )
         }`;
       }
     } else {
-      let G2$;
-      G2$ = buildQuadrantName(I, 1, true);
-      let J0 = Math.floor(12 - 0.5 * G2$.length);
-      out += `  ${" ".repeat(J0)}${G2$}${" ".repeat(J0)}`;
-      G2$ = buildQuadrantName(I, 5, true);
-      J0 = Math.floor(12 - 0.5 * G2$.length);
-      out += `${" ".repeat(J0)}${G2$}`;
+      let quadrantName = buildQuadrantName(mapY, 1, true);
+      let centerSpacing = Math.floor(12 - 0.5 * quadrantName.length);
+      out += `  ${" ".repeat(centerSpacing)}${quadrantName}${" ".repeat(
+        centerSpacing
+      )}`;
+      quadrantName = buildQuadrantName(mapY, 5, true);
+      centerSpacing = Math.floor(12 - 0.5 * quadrantName.length);
+      out += `${" ".repeat(centerSpacing)}${quadrantName}`;
     }
     print(out);
-    print(O1$);
+    print(separator);
   }
 }
 
@@ -1337,7 +1421,6 @@ async function endOfGame() {
     );
     print("THE END OF YOUR MISSION.");
   } else {
-    // 6370
     print(
       `CONGRULATION, CAPTAIN!  THEN LAST ${gameOptions.nameEnemy} BATTLE CRUISER`
     );
@@ -1358,8 +1441,8 @@ async function endOfGame() {
   if (gameState.starbasesRemaining > 0) {
     print("THE FEDERATION IS IN NEED OF A NEW STARSHIP COMMANDER");
     print("FOR A SIMILAR MISSION -- IF THERE IS A VOLUNTEER,");
-    const A$ = await input("LET HIM STEP FORWARD AND ENTER 'AYE'");
-    if (A$.toUpperCase() == "AYE") {
+    const playAgainInput = await input("LET HIM STEP FORWARD AND ENTER 'AYE'");
+    if (playAgainInput.toUpperCase() == "AYE") {
       gameState.shouldRestart = true;
       return;
     }
@@ -1367,7 +1450,6 @@ async function endOfGame() {
 }
 
 const COURSE_TO_XY = [
-  undefined,
   [0, 1],
   [-1, 1],
   [-1, 0],
@@ -1379,31 +1461,31 @@ const COURSE_TO_XY = [
   [0, 1],
 ];
 
-function courseToXY(course) {
-  const courseIdx = Math.floor(course);
+function courseToDeltaXY(course) {
+  const courseIdx = Math.floor(course) - 1;
   //3110 X1=C(C1,1)+(C(C1+1,1)-C(C1,1))*(C1-INT(C1)):X=S1:Y=S2
   //3140 X2=C(C1,2)+(C(C1+1,2)-C(C1,2))*(C1-INT(C1)):Q4=Q1:Q5=Q2
-  const X1 =
+  const courseDeltaY =
     COURSE_TO_XY[courseIdx][0] +
     (COURSE_TO_XY[courseIdx + 1][0] - COURSE_TO_XY[courseIdx][0]) *
       (course - Math.floor(course));
-  const X2 =
+  const courseDeltaX =
     COURSE_TO_XY[courseIdx][1] +
     (COURSE_TO_XY[courseIdx + 1][1] - COURSE_TO_XY[courseIdx][1]) *
       (course - Math.floor(course));
-  return [X1, X2];
+  return [courseDeltaY, courseDeltaX];
 }
 
 function findSpaceInQuadrantMap() {
-  let R1,
-    R2,
+  let posY,
+    posX,
     foundEmptyPlace = false;
   while (!foundEmptyPlace) {
-    R1 = FNR(1);
-    R2 = FNR(1);
-    foundEmptyPlace = findInQuadrantMap(QUADRANT_MAP_CELLS.empty, R1, R2);
+    posY = randomInt(8, 1);
+    posX = randomInt(8, 1);
+    foundEmptyPlace = findInQuadrantMap(QUADRANT_MAP_CELLS.empty, posY, posX);
   }
-  return [R1, R2];
+  return [posY, posX];
 }
 
 function findInQuadrantMap(str, y, x) {
@@ -1434,9 +1516,6 @@ function buildQuadrantName(y, x, regionNameOnly = false) {
 const randomInt = (max, min = 0) =>
   Math.floor(min + Math.random() * (max - min));
 
-const RND = () => Math.random();
-const FNR = () => randomInt(8, 1);
-
 const distanceFromEnemy = (sectorEnemyIndex) =>
   Math.sqrt(
     Math.pow(
@@ -1449,8 +1528,6 @@ const distanceFromEnemy = (sectorEnemyIndex) =>
         2
       )
   );
-
-const Z$ = "                         ";
 
 const QUADRANT_MAP_CELLS = {
   empty: "   ",
